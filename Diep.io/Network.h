@@ -134,6 +134,17 @@ public:
         std::cout << "Local IP address: " << sf::IpAddress::getLocalAddress() << ":" << socket.getLocalPort() << std::endl;
     }
 
+    void initObject(Object object, PacketType type, sf::IpAddress sender, unsigned short port) {
+        sf::Packet packet;
+        packet << type;
+        packet << InitSyncData{ object.getID(),
+            object.getPosition().x,object.getPosition().y, object.getTurretRotation(),
+            object.getVelocity().x,object.getVelocity().y,
+            object.getAcceleration().x,object.getAcceleration().y };
+
+        socket.send(packet, sender, port);
+    }
+
     void update() {
         syncSinceLastSend += Global::deltaTime;
         sf::IpAddress sender;
@@ -159,7 +170,8 @@ public:
                 connectedPeers.emplace_back(sender, port);
                 // 有人加入, 给他分配id
                 Player newPlayer(15.f, sf::Color::Blue, sf::Vector2f(400, 300), 1000);
-                newPlayer.randomAddToMap();
+                //newPlayer.randomAddToMap();
+                newPlayer.setPosition(450, 350);
                 players.push_back(newPlayer);
 
                 sf::Packet replyPosition;
@@ -170,36 +182,13 @@ public:
                 std::cout << "Send: Player Position" << std::endl;
 
                 // 同时把所有object的Velocity Acceleration currentHealth
-                for (auto resource : resources) {
-                    sf::Packet packet;
-                    packet << PacketType::SyncResourceStatus;
-                    packet << InitSyncData{ resource.getID(),
-                        resource.getPosition().x,resource.getPosition().y,0,
-                        resource.getVelocity().x,resource.getVelocity().y,
-                        resource.getAcceleration().x,resource.getAcceleration().y };
-
-                    socket.send(packet, sender, port);
-                }
-                for (auto enemy : enemies) {
-                    sf::Packet packet;
-                    packet << PacketType::SyncEnemyStatus;
-                    packet << InitSyncData{ enemy.getID(),
-                        enemy.getPosition().x,enemy.getPosition().y,enemy.getTurretRotation(),
-                        enemy.getVelocity().x,enemy.getVelocity().y,
-                        enemy.getAcceleration().x,enemy.getAcceleration().y };
-
-                    socket.send(packet, sender, port);
-                }
-                for (auto enemy : players) {
-                    sf::Packet packet;
-                    packet << PacketType::SyncPlayerStatus;
-                    packet << InitSyncData{ enemy.getID(),
-                        enemy.getPosition().x,enemy.getPosition().y,enemy.getTurretRotation(),
-                        enemy.getVelocity().x,enemy.getVelocity().y,
-                        enemy.getAcceleration().x,enemy.getAcceleration().y };
-
-                    socket.send(packet, sender, port);
-                }
+                initObject(player, PacketType::SyncPlayerStatus, sender, port);
+                for (auto resource : resources)
+                    initObject(resource, PacketType::SyncResourceStatus, sender, port);
+                for (auto enemy : enemies)
+                    initObject(enemy, PacketType::SyncEnemyStatus, sender, port);
+                for (auto enemy : players)
+                    initObject(enemy, PacketType::SyncPlayerStatus, sender, port);
                 for (auto bullet : bullets) {
                     sf::Packet packet;
                     packet << PacketType::SyncBulletStatus;
@@ -211,6 +200,7 @@ public:
 
                     socket.send(packet, sender, port);
                 }
+
                 break;
             }
             case PacketType::PlayerIDAssign: {
@@ -251,7 +241,7 @@ public:
                 InitSyncData initData;
                 packet >> initData;
 
-                Player enemy(15.f, sf::Color::Red, sf::Vector2f(initData.x, initData.y), 100);
+                Player enemy(15.f, sf::Color::Blue, sf::Vector2f(initData.x, initData.y), 1000);
                 enemy.setID(initData.id);
                 enemy.setVelocity(sf::Vector2f(initData.vx, initData.vy));
                 enemy.setAcceleration(sf::Vector2f(initData.ax, initData.ay));
@@ -312,7 +302,7 @@ public:
             case PacketType::PlayerPositionUpdate: {
                 std::cout << "Player Position Update" << std::endl;
 
-                PositionData positionData;
+                InitSyncData positionData;
                 packet >> positionData;
 
                 // 同步该玩家的位置
@@ -321,6 +311,8 @@ public:
 
                 if (it != players.end()) {
                     it->setPosition(positionData.x, positionData.y);
+                    it->setVelocity(sf::Vector2f(positionData.vx, positionData.vy));
+                    it->setAcceleration(sf::Vector2f(positionData.ax, positionData.ay));
                     it->setTurretRotation(positionData.turretRotation);
                 }
                 break;
@@ -354,13 +346,16 @@ public:
     }
 
     void sendPlayerPositionUpdate() {
-        if (syncSinceLastSend < 0.5f)
+        if (syncSinceLastSend < 0.1f)
             return;
         syncSinceLastSend = 0.f;
         
         sf::Packet packet;
         packet << PacketType::PlayerPositionUpdate;
-        packet << PositionData{ player.getID(), player.getPosition().x, player.getPosition().y, player.getTurretRotation() };
+        packet << InitSyncData{ player.getID(),
+            player.getPosition().x,player.getPosition().y,player.getTurretRotation(),
+            player.getVelocity().x,player.getVelocity().y,
+            player.getAcceleration().x,player.getAcceleration().y };
         sendToAllPlayers(packet);
 
         // std::cout << "Send: Player Position" << std::endl;

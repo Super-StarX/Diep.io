@@ -89,6 +89,10 @@ public:
 		healthText.setPosition(x, y);
 	}
 
+	float getTurretRotation() {
+		return 0;
+	}
+
 	bool collideWith(Object& other, float extraDistance) {
 		sf::Vector2f distanceVec = getPosition() - other.getPosition();
 		float distance = std::sqrt(distanceVec.x * distanceVec.x + distanceVec.y * distanceVec.y);
