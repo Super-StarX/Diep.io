@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="源文件\Network">
+      <UniqueIdentifier>{c08b3ad1-a21c-4d8b-9103-08e95ad8d1c2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="diep.cpp">
@@ -56,11 +59,14 @@
     <ClInclude Include="AIPlayer.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="Network.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="Menu.h">
       <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Network.h">
+      <Filter>源文件\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Packet.h">
+      <Filter>源文件\Network</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

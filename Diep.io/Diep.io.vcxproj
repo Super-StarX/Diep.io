@@ -148,6 +148,7 @@
     <ClInclude Include="Menu.h" />
     <ClInclude Include="Network.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="Packet.h" />
     <ClInclude Include="Player.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -185,23 +185,26 @@ void update() {
 			enemy.think();
 			enemy.update();
 			enemy.checkCollision();
+			networkManager.sendAIStatus(enemy);
 		}
 
 		// 从内存中真正删除死去的资源
-		resources.erase(std::remove_if(resources.begin(), resources.end(),
-			[](Object& resource) {
-				return !resource.getHealth();
-			}), resources.end());
+		if (networkManager.isHost()) {
+			resources.erase(std::remove_if(resources.begin(), resources.end(),
+				[](Object& resource) {
+					return !resource.getHealth();
+				}), resources.end());
 
-		bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
-			[](Bullet& bullet) {
-				return bullet.isVivid();
-			}), bullets.end());
+			bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
+				[](Bullet& bullet) {
+					return bullet.isVivid();
+				}), bullets.end());
 
-		enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-			[](AIPlayer& enemy) {
-				return !enemy.getHealth();
-			}), enemies.end());
+			enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+				[](AIPlayer& enemy) {
+					return !enemy.getHealth();
+				}), enemies.end());
+		}
 
 		//生成新的资源
 		if (networkManager.isHost() && resources.size() < maxResourceCount) {
