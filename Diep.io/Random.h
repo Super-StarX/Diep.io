@@ -1,4 +1,3 @@
-
 #include <random>
 
 static float randomTable[] = {

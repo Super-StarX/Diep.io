@@ -3,15 +3,15 @@
 #include "UI.h"
 #include "AIPlayer.h"
 void Button::upgradeBulletSpeed() {
-	player.bulletSpeedMulti += 0.3f;
+	player.upgradeBulletSpeed(0.3f);
 	std::cout << "upgradeBulletSpeed" << std::endl;
 }
 void Button::upgradeBulletPenetration() {
-	player.bulletPenetration += 1.f;
+	player.upgradeBulletPenetration(1.f);
 	std::cout << "upgradeBulletPenetration" << std::endl;
 }
 void Button::upgradeBulletDamage() {
-	player.bulletDamage += 1;
+	player.upgradeBulletDamage(1);
 	std::cout << "upgradeBulletDamage" << std::endl;
 }
 void Button::upgradeHealthRegen() {
@@ -19,11 +19,11 @@ void Button::upgradeHealthRegen() {
 	std::cout << "upgradeHealthRegen" << std::endl;
 }
 void Button::upgradeReloadInterval() {
-	player.reloadInterval -= 0.02f;
+	player.upgradeReloadInterval(0.02f);
 	std::cout << "upgradeReloadInterval" << std::endl;
 }
 void Button::upgradeMovementSpeed() {
-	player.setMaxSpeed(player.getMaxSpeed() + 10.f);
+	player.upgradeMovementSpeed(10.f);
 	std::cout << "upgradeMovementSpeed" << std::endl;
 }
 
