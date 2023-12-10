@@ -22,12 +22,18 @@ int Player::getExp() const {
 }
 
 void Player::AddExp(int amount) {
+	if (level > 9)
+		return;
+	static int const nextLevelExp[] = { 1000,2000,3000,4000,5000,6000,7000,8000,9000,100000 };
 	exp += amount;
-	if (exp >= 1000) {
+	int need = nextLevelExp[level];
+	if (exp >= need) {
 		int count = exp / 1000;
-		remainLevel += count;
-		level += count;
-		exp -= 1000 * count;
+		remainUpgradeSkills += 1;
+		level += 1;
+		exp -= need;
+		if (exp >= need)
+			this->AddExp(amount - need);
 	}
 }
 
@@ -36,7 +42,7 @@ int Player::getLevel() const {
 }
 
 int Player::upgradeCount() const {
-	return remainLevel > 0;
+	return remainUpgradeSkills > 0;
 }
 
 bool Player::isAI() {
@@ -144,6 +150,21 @@ void Player::checkCollision() {
 	}
 }
 
+float Player::getBulletRadius(){
+	int damage = this->getBulletDamage();
+	if (damage > 15)
+		return 6.f;
+	else if (damage > 25)
+		return 7.f;
+	else if (damage > 40)
+		return 8.f;
+	else if (damage > 60)
+		return 9.f;
+	else if (damage > 100)
+		return 10.f;
+	return 5.f;
+}
+
 bool Player::fire(sf::Vector2f target, sf::Color color) {
 	if (checkShot()) {
 		Bullet bullet(this, color);
@@ -187,31 +208,31 @@ int Player::getBulletDamage() const {
 
 void Player::upgradeBulletSpeed(float amount) {
 	bulletSpeedMulti += amount;
-	remainLevel--;
+	remainUpgradeSkills--;
 	std::cout << "Upgrade Bullet Speed" << std::endl;
 }
 
 void Player::upgradeBulletPenetration(float amount) {
 	bulletPenetration += amount;
-	remainLevel--;
+	remainUpgradeSkills--;
 	std::cout << "Upgrade Bullet Penetration" << std::endl;
 }
 
 void Player::upgradeBulletDamage(int amount) {
 	bulletDamage += amount;
-	remainLevel--;
+	remainUpgradeSkills--;
 	std::cout << "Upgrade Bullet Damage" << std::endl;
 }
 
 void Player::upgradeReloadInterval(float amount) {
 	reloadInterval -= amount;
-	remainLevel--;
+	remainUpgradeSkills--;
 	std::cout << "Upgrade Reload Interval" << std::endl;
 }
 
 void Player::upgradeMovementSpeed(float amount) {
 	setMaxSpeed(getMaxSpeed() + amount);
-	remainLevel--;
+	remainUpgradeSkills--;
 	std::cout << "Upgrade Movement Speed" << std::endl;
 }
 

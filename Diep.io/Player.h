@@ -7,6 +7,7 @@ public:
 	Player(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth);
 
 	virtual bool isAI();
+	virtual float getBulletRadius();
 	sf::Vector2f getTurretPosition() const;
 	float getTurretRotation();
 	void setTurretRotation(float degress);
@@ -44,19 +45,20 @@ protected:
 private:
 	int exp{ 0 };
 	int level{ 1 };
-	int remainLevel{ 0 };
+	int remainUpgradeSkills{ 0 };
+	int remainUpgradeType{ 0 };
 
 	sf::RectangleShape turret;
 	sf::RectangleShape healthBar;
 	sf::Text nameText;
 
-	float timeSinceLastShot{ 0.0f }; // ×ÔÉÏ´ÎÉä»÷ÒÔÀ´¾­¹ýµÄÊ±¼ä
+	float timeSinceLastShot{ 0.0f }; // ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
 
 	float bulletSpeedMulti{ 1.0f };
 	float bulletPenetration{ 1.0f };
 	int bulletDamage{ 10 };
 	//int HealthRegen { 0 };
 	//int BodyDamage;
-	float reloadInterval{ 0.3f }; // Éä»÷¼ä¸ô£¬ÒÔÃëÎªµ¥Î»
+	float reloadInterval{ 0.3f }; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Î»
 	//float movementSpeed;MaxSpeed
 };

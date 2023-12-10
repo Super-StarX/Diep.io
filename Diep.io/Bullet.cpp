@@ -6,7 +6,7 @@ Bullet::Bullet(Player* owner, sf::Color color)
 	bulletSpeedMulti(owner->getBulletSpeedMulti()),
 	bulletPenetration(owner->getBulletPenetration()),
 	bulletDamage(owner->getBulletDamage()),
-	Object(sqrt(owner->getBulletDamage() / 2.f), color, owner->getPosition(), owner->getBulletDamage()) {
+	Object(owner->getBulletRadius(), color, owner->getPosition(), owner->getBulletDamage()) {
 }
 
 float Bullet::getBulletSpeed() const {
