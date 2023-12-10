@@ -6,7 +6,7 @@ Bullet::Bullet(Player* owner, sf::Color color)
 	bulletSpeedMulti(owner->getBulletSpeedMulti()),
 	bulletPenetration(owner->getBulletPenetration()),
 	bulletDamage(owner->getBulletDamage()),
-	Object(owner->getBulletDamage() / 2.f, color, owner->getPosition(), owner->getBulletDamage()) {
+	Object(sqrt(owner->getBulletDamage() / 2.f), color, owner->getPosition(), owner->getBulletDamage()) {
 }
 
 float Bullet::getBulletSpeed() const {
@@ -75,10 +75,14 @@ void Bullet::checkCollision() {
 			resource.reduceHealth(getDamage());
 			reduceHealth(health);
 
-			// 为资源添加后坐力
-			sf::Vector2f impactDirection = getVelocity();
-			sf::Vector2f newVelocity = resource.getVelocity() + 0.2f * impactDirection;
-			resource.setVelocity(newVelocity);
+			if (resource.getHealth() <= 0)
+				getOwner()->AddExp(500);
+			else {
+				// 为资源添加后坐力
+				sf::Vector2f impactDirection = getVelocity();
+				sf::Vector2f newVelocity = resource.getVelocity() + 0.2f * impactDirection;
+				resource.setVelocity(newVelocity);
+			}
 		}
 	}
 
@@ -88,6 +92,8 @@ void Bullet::checkCollision() {
 			int health = enemy.getHealth();
 			enemy.reduceHealth(getDamage());
 			reduceHealth(health);
+			if (enemy.getHealth() <= 0)
+				getOwner()->AddExp(2000);
 		}
 	}
 }
@@ -109,6 +115,9 @@ sf::Vector2f Bullet::evaluatePosition() {
 }
 
 void Bullet::update() {
+	if (++life > bulletLife)
+		reduceHealth(getHealth());
+
 	float delta = Global::deltaTime;
 
 	// 速度更新

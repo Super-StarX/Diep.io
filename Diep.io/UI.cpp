@@ -3,7 +3,7 @@
 #include "UI.h"
 #include "AIPlayer.h"
 void Button::upgradeBulletSpeed() {
-	player.upgradeBulletSpeed(0.3f);
+	player.upgradeBulletSpeed(1.3f);
 	std::cout << "upgradeBulletSpeed" << std::endl;
 }
 void Button::upgradeBulletPenetration() {
@@ -11,7 +11,7 @@ void Button::upgradeBulletPenetration() {
 	std::cout << "upgradeBulletPenetration" << std::endl;
 }
 void Button::upgradeBulletDamage() {
-	player.upgradeBulletDamage(1);
+	player.upgradeBulletDamage(5);
 	std::cout << "upgradeBulletDamage" << std::endl;
 }
 void Button::upgradeHealthRegen() {
@@ -23,7 +23,7 @@ void Button::upgradeReloadInterval() {
 	std::cout << "upgradeReloadInterval" << std::endl;
 }
 void Button::upgradeMovementSpeed() {
-	player.upgradeMovementSpeed(10.f);
+	player.upgradeMovementSpeed(30.f);
 	std::cout << "upgradeMovementSpeed" << std::endl;
 }
 
@@ -78,16 +78,18 @@ void UI::drawGameOver() {
 }
 
 void UI::draw() {
-	for (auto& button : buttons) {
-		button.draw();
-	}
+	if (player.upgradeCount())
+		for (auto& button : buttons)
+			button.draw();
+
 	// 更新坐标信息
 	std::ostringstream ss;
 	ss << "x: " << player.getPosition().x << ", y: " << player.getPosition().y <<
 		"\nfps:" << 1 / Global::deltaTime <<
 		"\nenemy:" << enemies.size() <<
 		"\nresource:" << resources.size() <<
-		"\ncurSpeed:" << player.getSpeed();
+		"\ncurSpeed:" << player.getSpeed() <<
+		"\nExp:" << player.getExp()<< ", Level:" << player.getLevel();
 	playerPosText.setString(ss.str());
 	window.draw(playerPosText);
 

@@ -20,10 +20,15 @@ public:
 	bool fire(sf::Vector2f target, sf::Color color);
 	void update();
 
+	int getExp() const;
+	void AddExp(int amount);
+	int getLevel() const;
+	int upgradeCount() const;
 	int getDamage() const;
 	float getBulletSpeedMulti() const;
 	float getBulletPenetration() const;
 	int getBulletDamage() const;
+
 	void upgradeBulletSpeed(float amount);
 	void upgradeBulletPenetration(float amount);
 	void upgradeBulletDamage(int amount);
@@ -37,6 +42,10 @@ protected:
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
 private:
+	int exp{ 0 };
+	int level{ 1 };
+	int remainLevel{ 0 };
+
 	sf::RectangleShape turret;
 	sf::RectangleShape healthBar;
 	sf::Text nameText;

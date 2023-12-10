@@ -2,6 +2,8 @@
 
 #include "Player.h"
 
+// Ë¼¿¼·¶Î§
+static float thinkRange = 350.f;
 class AIPlayer : public Player {
 public:
 	AIPlayer(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth);
@@ -13,7 +15,4 @@ public:
 	sf::Vector2f computeNewPosition(float x, float y); // ¹æ±ÜÅö×²
 	void think();
 	virtual ObjectType WhatAmI();
-
-	// Ë¼¿¼·¶Î§
-	float thinkRange = 350.f;
 };

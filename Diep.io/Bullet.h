@@ -2,6 +2,7 @@
 
 #include "Object.h"
 
+static int bulletLife = 300;
 class Bullet : public Object {
 public:
 	Bullet(Player* owner, sf::Color color);
@@ -25,6 +26,7 @@ protected:
 
 private:
 	Player* owner;
+	int life{ 0 };
 	float bulletDefaultSpeed{ 150.0f };
 	float bulletSpeedMulti{ 1.0f };
 	float bulletPenetration{ 0.0f };
