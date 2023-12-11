@@ -39,7 +39,6 @@ public:
 	float getRadius();
 	sf::Vector2f getPosition();
 	void setPosition(float x, float y);
-	float getTurretRotation();
 	bool collideWith(Object& other, float extraDistance);
 	bool collideWith(const Object& other) const;
 	void randomAddToMap();
@@ -49,6 +48,7 @@ public:
 	void update();
 	virtual bool isVivid();
 	virtual ObjectType WhatAmI();
+	virtual float getTurretRotation();
 
 protected:
 	virtual void move(float x, float y);

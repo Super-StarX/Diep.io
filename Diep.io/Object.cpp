@@ -14,9 +14,15 @@ void setOrigin(T shape) {
 Object::Object(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth)
 	: body(radius), maxHealth(maxHealth), currentHealth(maxHealth) {
 	// 将炮塔原点设置为其局部边界的中心
-	body.setOrigin(body.getRadius(), body.getRadius());
+	body.setOrigin(radius, radius);
 	body.setPosition(position);
 	body.setFillColor(color);
+	body.setOutlineThickness(radius / 5);
+	auto lineColor = color;
+	lineColor.r = static_cast<int>(lineColor.r * 0.75);
+	lineColor.g = static_cast<int>(lineColor.g * 0.75);
+	lineColor.b = static_cast<int>(lineColor.b * 0.75);
+	body.setOutlineColor(lineColor);
 
 	healthText.setFont(Global::font);
 	healthText.setCharacterSize(static_cast<int>(radius) * 2);

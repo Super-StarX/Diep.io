@@ -5,7 +5,7 @@
 static int bulletLife = 300;
 class Bullet : public Object {
 public:
-	Bullet(Player* owner, sf::Color color);
+	Bullet(Player* owner, sf::Vector2f pos);
 
 	float getBulletSpeed() const;
 	int getDamage() const;

@@ -1,12 +1,12 @@
 #include "Bullet.h"
 #include "AIPlayer.h"
 
-Bullet::Bullet(Player* owner, sf::Color color)
+Bullet::Bullet(Player* owner, sf::Vector2f pos)
 	: owner(owner),
 	bulletSpeedMulti(owner->getBulletSpeedMulti()),
 	bulletPenetration(owner->getBulletPenetration()),
 	bulletDamage(owner->getBulletDamage()),
-	Object(owner->getBulletRadius(), color, owner->getPosition(), owner->getBulletDamage()) {
+	Object(owner->getBulletRadius(), owner->getColor(), pos, owner->getBulletDamage()) {
 }
 
 float Bullet::getBulletSpeed() const {

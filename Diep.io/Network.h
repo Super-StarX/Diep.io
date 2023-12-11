@@ -173,8 +173,7 @@ public:
 						[=](AIPlayer& p) { return p.getID() == initData.id; });
 
 					if (it != enemies.end()) {
-						Bullet bullet(&*it, sf::Color::Blue);
-						bullet.setPosition(initData.x, initData.y);
+						Bullet bullet(&*it, sf::Vector2f(initData.x, initData.y));
 						bullet.setVelocity(sf::Vector2f(initData.vx, initData.vy));
 						bullet.setAcceleration(sf::Vector2f(initData.ax, initData.ay));
 						bullets.push_back(bullet);
@@ -185,8 +184,7 @@ public:
 						[=](Player& p) { return p.getID() == initData.id; });
 
 					if (it != players.end()) {
-						Bullet bullet(&*it, sf::Color::Blue);
-						bullet.setPosition(initData.x, initData.y);
+						Bullet bullet(&*it, sf::Vector2f(initData.x, initData.y));
 						bullet.setVelocity(sf::Vector2f(initData.vx, initData.vy));
 						bullet.setAcceleration(sf::Vector2f(initData.ax, initData.ay));
 						bullets.push_back(bullet);
@@ -224,7 +222,7 @@ public:
 
 				if (it != players.end()) {
 					sf::Vector2f target{ fireEventData.targetX, fireEventData.targetY };
-					it->fire(target, sf::Color::Blue);
+					it->fire(target);
 				}
 				break;
 			}

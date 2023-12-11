@@ -1,14 +1,59 @@
 #pragma once
 
 #include "Object.h"
+#include "Turret.h"
 
 class Player : public Object {
 public:
 	Player(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth);
 
+	enum class TurretTypes
+	{
+		//---------0-5¼¶
+		Default,
+
+		//---------5-15¼¶
+		Twin,//×óÓÒË«·¢
+		Sniper,//Ò»·¢2±¶ÉËº¦µ«ÊÇrof/2
+		MachineGun,//¿ªÇ¹¸ü¿ì
+		FlankGuard,//Ç°ºó¿ª»ð
+
+		//---------15-40¼¶
+		//Double to
+		TripleShot,//É¢·¢3·¢
+		GuadTank,//4¸ö·½Ïò
+
+		//Sniper to
+		Assassin,//Ò»·¢4±¶ÉËº¦µ«ÊÇrof/2
+		Overseer,//Ä¸½¢
+
+		//MachineGun to
+		Destoryer,//Ò»·¢¾Þ´óµÄÅÚµ¯,ÕâÅÚµ¯ÄÜ¶¥¸ü¶à·¢×Óµ¯
+		Gunner,//Ð¡»úÇ¹
+
+		//FlankGuard to
+		TriAngle,//Æ¨¹É·½Ïò2·¢
+		Smasher,//´´ÈË
+
+		//ÖÕ¼«
+		Triplet,//Ò»´ÎÈý·¢
+		OctoTank,//8¸ö·½Ïò¿ª»ð
+
+		Stalker,//Ò»´Î6±¶ÉËº¦¼Ó³¬¼¶´©Í¸,ËÙ¶ÈºÜ¿ì
+		Overlord,//
+
+		Annihilator,//
+		Streamliner,//ÉäËÙ³¬¿ì
+
+		Booster,//ÒÆËÙ³¬¿ì
+		Landmine,//¾²Ö¹ÒþÐÎ
+		Spike//·´µ¯×Óµ¯
+
+	};
+
 	virtual bool isAI();
 	virtual float getBulletRadius();
-	sf::Vector2f getTurretPosition() const;
+	void changeTurret(TurretTypes type);
 	float getTurretRotation();
 	void setTurretRotation(float degress);
 	void calcTurretRotation(const sf::Vector2f& mousePos);
@@ -18,13 +63,14 @@ public:
 	void reduceHealth(int amount);
 	void checkMove(float moveSpeed);
 	void checkCollision();
-	bool fire(sf::Vector2f target, sf::Color color);
+	bool fire(sf::Vector2f target);
 	void update();
 
 	int getExp() const;
 	void AddExp(int amount);
 	int getLevel() const;
 	int upgradeCount() const;
+	sf::Color getColor() const;
 	int getDamage() const;
 	float getBulletSpeedMulti() const;
 	float getBulletPenetration() const;
@@ -43,22 +89,31 @@ protected:
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
 private:
+
 	int exp{ 0 };
 	int level{ 1 };
 	int remainUpgradeSkills{ 0 };
 	int remainUpgradeType{ 0 };
 
-	sf::RectangleShape turret;
+	//sf::RectangleShape turret;
+	sf::Color color;
 	sf::RectangleShape healthBar;
 	sf::Text nameText;
+	std::vector<Turret> turrets;
+	float turretRotating{ 0.f };
+	TurretTypes Type{ TurretTypes::Default };
 
-	float timeSinceLastShot{ 0.0f }; // ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+	float timeSinceLastShot{ 0.0f }; // ×ÔÉÏ´ÎÉä»÷ÒÔÀ´¾­¹ýµÄÊ±¼ä
 
 	float bulletSpeedMulti{ 1.0f };
 	float bulletPenetration{ 1.0f };
 	int bulletDamage{ 10 };
 	//int HealthRegen { 0 };
 	//int BodyDamage;
-	float reloadInterval{ 0.3f }; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Î»
+	float reloadInterval{ 0.3f }; // Éä»÷¼ä¸ô£¬ÒÔÃëÎªµ¥Î»
 	//float movementSpeed;MaxSpeed
+
+	//hide data
+	float accuracy{ 20.f };
+	float recoil{ 3.f };
 };

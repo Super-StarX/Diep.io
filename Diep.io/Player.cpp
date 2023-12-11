@@ -1,16 +1,9 @@
 #include <iostream>
 #include "Player.h"
-#include "Bullet.h"
-#include "Player.h"
-#include "Random.h"
 
 Player::Player(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth) :
-	Object(radius, color, position, maxHealth) {
-
-	turret.setSize(sf::Vector2f(radius * 0.5f, radius * 1.8f));
-	turret.setFillColor(color);
-	turret.setOrigin(turret.getSize().x / 2, turret.getSize().y);
-	turret.setPosition(body.getPosition());
+	Object(radius, color, position, maxHealth), color(color) {
+	changeTurret(TurretTypes::Triplet);
 	healthBar.setSize(sf::Vector2f(radius * 2.0f, 4.0f));
 	healthBar.setFillColor(sf::Color::Red);
 	healthBar.setOrigin(healthBar.getSize().x / 2, 20);
@@ -49,20 +42,103 @@ bool Player::isAI() {
 	return false;
 }
 
-sf::Vector2f Player::getTurretPosition() const {
-	return turret.getPosition();
+void Player::changeTurret(TurretTypes type) {
+	turrets.clear();
+	float radius = getRadius();//15.f
+	switch (type)
+	{
+	case Player::TurretTypes::Default:
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		break;
+		//初级
+	case Player::TurretTypes::Twin:
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.2f, sf::Vector2f{ -10,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.2f, sf::Vector2f{ 10,20 }, color, 0, 1));
+		break;
+	case Player::TurretTypes::Sniper:
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.8f, sf::Vector2f{ 0,40 }, color, 0, 1));
+		break;
+	case Player::TurretTypes::MachineGun:
+		turrets.emplace_back(Turret(this, radius * 0.95f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		break;
+	case Player::TurretTypes::FlankGuard:
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, sf::Vector2f{ 0,20 }, color, 180, 1));
+		break;
+		//中级
+	case Player::TurretTypes::TripleShot:
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, -45, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 45, 1));
+		break;
+	case Player::TurretTypes::GuadTank:
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 90, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 180, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 270, 1));
+		break;
+	case Player::TurretTypes::Assassin:
+		break;
+	case Player::TurretTypes::Overseer:
+		break;
+	case Player::TurretTypes::Destoryer:
+		break;
+	case Player::TurretTypes::Gunner:
+		break;
+	case Player::TurretTypes::TriAngle:
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, sf::Vector2f{ 0,20 }, color, -160, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, sf::Vector2f{ 0,20 }, color, 160, 1));
+		break;
+	case Player::TurretTypes::Smasher:
+		break;
+		//高级
+	case Player::TurretTypes::Triplet:
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 1.8f, sf::Vector2f{ -11,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 1.8f, sf::Vector2f{ 11,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.75f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		break;
+	case Player::TurretTypes::OctoTank:
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 45, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 90, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 135, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 180, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, -45, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, -90, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, -135, 1));
+		break;
+	case Player::TurretTypes::Stalker:
+		break;
+	case Player::TurretTypes::Overlord:
+		break;
+	case Player::TurretTypes::Annihilator:
+		break;
+	case Player::TurretTypes::Streamliner:
+		break;
+	case Player::TurretTypes::Booster:
+		break;
+	case Player::TurretTypes::Landmine:
+		break;
+	case Player::TurretTypes::Spike:
+		break;
+	default:
+		break;
+	}
 }
 
 float Player::getTurretRotation() {
-	return turret.getRotation();
+	return turretRotating;
 }
 
 void Player::setTurretRotation(float degress) {
-	turret.setRotation(degress);
+	turretRotating = degress;
+	for (auto& turret : turrets)
+		turret.setRotation(degress);
 }
 
 void Player::calcTurretRotation(const sf::Vector2f& mousePos) {
-	sf::Vector2f turretPos = turret.getPosition();
+	sf::Vector2f turretPos = getPosition();
 	sf::Vector2f direction = mousePos - turretPos;
 
 	// 计算夹角弧度
@@ -85,7 +161,8 @@ void Player::resetShot() {
 void Player::setPosition(float x, float y) {
 	Object::setPosition(x, y);
 
-	turret.setPosition(x, y);
+	for (auto& turret : turrets)
+		turret.setPosition(x, y);
 	healthBar.setPosition(x, y);
 }
 
@@ -165,20 +242,13 @@ float Player::getBulletRadius(){
 	return 5.f;
 }
 
-bool Player::fire(sf::Vector2f target, sf::Color color) {
+bool Player::fire(sf::Vector2f target) {
 	if (checkShot()) {
-		Bullet bullet(this, color);
-		sf::Vector2f direction = target - getTurretPosition();
-
-		direction.x += random::randomFloat(-10, 10);
-		direction.y += random::randomFloat(-10, 10);
-		float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-		bullet.setVelocity(direction / length * bullet.getBulletSpeed());
-		bullets.emplace_back(bullet);
-
-		setVelocity(getVelocity() - 3.f * direction / length);
+		for (auto& turret : turrets) {
+			auto backVel = turret.fire(this, target);
+			setVelocity(getVelocity() - backVel);
+		}
 		resetShot();
-
 		return true;
 	}
 	return false;
@@ -188,6 +258,10 @@ void Player::update() {
 	Object::update();
 	//rof更新
 	timeSinceLastShot += Global::deltaTime;
+}
+
+sf::Color Player::getColor() const {
+	return color;
 }
 
 int Player::getDamage() const {
@@ -207,30 +281,40 @@ int Player::getBulletDamage() const {
 }
 
 void Player::upgradeBulletSpeed(float amount) {
+	if (!remainUpgradeSkills)
+		return;
 	bulletSpeedMulti += amount;
 	remainUpgradeSkills--;
 	std::cout << "Upgrade Bullet Speed" << std::endl;
 }
 
 void Player::upgradeBulletPenetration(float amount) {
+	if (!remainUpgradeSkills)
+		return;
 	bulletPenetration += amount;
 	remainUpgradeSkills--;
 	std::cout << "Upgrade Bullet Penetration" << std::endl;
 }
 
 void Player::upgradeBulletDamage(int amount) {
+	if (!remainUpgradeSkills)
+		return;
 	bulletDamage += amount;
 	remainUpgradeSkills--;
 	std::cout << "Upgrade Bullet Damage" << std::endl;
 }
 
 void Player::upgradeReloadInterval(float amount) {
+	if (!remainUpgradeSkills)
+		return;
 	reloadInterval -= amount;
 	remainUpgradeSkills--;
 	std::cout << "Upgrade Reload Interval" << std::endl;
 }
 
 void Player::upgradeMovementSpeed(float amount) {
+	if (!remainUpgradeSkills)
+		return;
 	setMaxSpeed(getMaxSpeed() + amount);
 	remainUpgradeSkills--;
 	std::cout << "Upgrade Movement Speed" << std::endl;
@@ -244,14 +328,14 @@ void Player::move(float x, float y) {
 	Object::move(x, y);
 
 	sf::Vector2f pos = body.getPosition();
-	turret.setPosition(pos.x, pos.y);
+	for (auto& turret : turrets)
+		turret.setPosition(pos.x, pos.y);
 	healthBar.setPosition(pos.x, pos.y);
 }
 
 void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const {
+	for (auto& turret : turrets)
+		turret.draw(target, states);
 	Object::draw(target, states);
-
-	// 画炮台和血条
-	target.draw(turret, states);
 	target.draw(healthBar, states);
 }

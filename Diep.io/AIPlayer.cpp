@@ -3,7 +3,6 @@
 
 AIPlayer::AIPlayer(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth) :
     Player(radius, color, position, maxHealth) {
-
 }
 
 bool AIPlayer::isAI() {
@@ -88,7 +87,7 @@ void AIPlayer::think() {
     // 如果在思考范围内，瞄准玩家并开火
     if (distance < thinkRange) {
         calcTurretRotation(player.getPosition());
-        fire(player.getPosition(), sf::Color::Red);
+        fire(player.getPosition());
     }
 
     // 定义移动方向的列表
