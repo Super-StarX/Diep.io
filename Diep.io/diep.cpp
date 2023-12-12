@@ -9,14 +9,6 @@
 #include "Menu.h"
 #include "Network.h"
 
-// 固定数值
-constexpr float moveSpeed = 300.0f;
-float Global::inertia = 0.1f; // 摩擦力
-const int maxResourceCount = 500; // 最大资源数
-float respawnTime = 0.1f; // 控制新资源生成间隔（秒）
-int defaultWindowWidth = 800;
-int defaultWindowHeight = 600;
-
 // 会变的数值
 bool Global::isGameOver = false;
 float Global::deltaTime = 0.0f;
@@ -32,18 +24,18 @@ UI Global::ui;
 Menu menu;
 
 // 创建对象
-Player Global::currentPlayer(15.f, sf::Color::Blue, sf::Vector2f(400, 300), 1000);
+Player Global::currentPlayer(15.f, sf::Color{0,179,225}, point(400, 300), 1000);
 std::vector<Player> players;
 std::vector<Bullet> bullets;
-std::vector<Object> resources{ 250, Object(10.f, sf::Color::Green, sf::Vector2f(200, 200), 100), };
-std::vector<AIPlayer> enemies{ 50, AIPlayer(15.f, sf::Color::Red, sf::Vector2f(200, 200), 100), };
+std::vector<Object> resources{ 250, Object(randomResourceType(),point(200, 200)) };
+std::vector<AIPlayer> enemies{ 50, AIPlayer(15.f, sf::Color::Red, point(200, 200), 100), };
 
-sf::Vector2f getWindowToWorldPosition(const sf::View& view) {
+point getWindowToWorldPosition(const sf::View& view) {
 	// 获取鼠标在窗口中的位置（窗口坐标系）
 	sf::Vector2i windowMousePosition = sf::Mouse::getPosition(window);
 
 	// 将窗口坐标转换为视图坐标系
-	sf::Vector2f viewMousePosition = window.mapPixelToCoords(windowMousePosition, view);
+	point viewMousePosition = window.mapPixelToCoords(windowMousePosition, view);
 
 	return viewMousePosition;
 }
@@ -51,18 +43,18 @@ sf::Vector2f getWindowToWorldPosition(const sf::View& view) {
 void drawGrid(int cellSize) {
 	constexpr int borderSize = 20;
 	//边界
-	sf::RectangleShape border(sf::Vector2f(mapWidth + borderSize * 2, mapHeight + borderSize * 2));
+	sf::RectangleShape border(point(mapWidth + borderSize * 2, mapHeight + borderSize * 2));
 	border.setFillColor(sf::Color(150, 150, 150));
 	border.setPosition(-borderSize, -borderSize);
 	window.draw(border);
 
 	//地图
-	sf::RectangleShape map(sf::Vector2f(mapWidth, mapHeight));
-	map.setFillColor(sf::Color(201, 201, 210));
+	sf::RectangleShape map(point(mapWidth, mapHeight));
+	map.setFillColor(sf::Color(198, 198, 198));
 	window.draw(map);
 
 	//网格
-	sf::RectangleShape line(sf::Vector2f(mapWidth, 1));
+	sf::RectangleShape line(point(mapWidth, 1));
 	line.setFillColor(sf::Color(170, 170, 170));
 
 	for (size_t y = 0; y <= mapHeight / cellSize; ++y) {
@@ -70,7 +62,7 @@ void drawGrid(int cellSize) {
 		window.draw(line);
 	}
 
-	line.setSize(sf::Vector2f(1, mapHeight));
+	line.setSize(point(1, mapHeight));
 
 	for (size_t x = 0; x <= mapWidth / cellSize; ++x) {
 		line.setPosition(static_cast<float>(x * cellSize), 0);
@@ -147,7 +139,7 @@ void update() {
 		// 如果游戏未结束并且用户聚焦于当前应用
 		if (hasFocus && !isClickButton && !Global::isGameOver) {
 			// 更新炮塔方向
-			sf::Vector2f mousePosition = getWindowToWorldPosition(view);
+			point mousePosition = getWindowToWorldPosition(view);
 			player.calcTurretRotation(mousePosition);
 
 			// 根据用户输入(wsad)移动炮台
@@ -160,7 +152,7 @@ void update() {
 
 			// 如果按下鼠标左键,则进行开火
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-				if (player.fire(mousePosition, sf::Color::Blue))
+				if (player.fire(mousePosition))
 					networkManager.sendPlayerFireEvent(mousePosition);
 		}
 
@@ -214,7 +206,7 @@ void update() {
 			// 如果累积时间大于生成资源所需的时间，尝试在地图的随机位置生成新资源
 			if (timeSinceLastSpawn >= respawnTime) {
 				timeSinceLastSpawn = 0; // 重置时间
-				Object resource(10.f, sf::Color::Green, sf::Vector2f(200, 200), 100);
+				Object resource(randomResourceType(), point(200, 200));
 				resource.randomAddToMap();
 				resources.emplace_back(std::move(resource));
 				networkManager.sendPlayerResource(resource.getPosition());

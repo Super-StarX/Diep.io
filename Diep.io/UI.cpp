@@ -28,18 +28,18 @@ void Button::upgradeMovementSpeed() {
 }
 
 void UI::initialiseMinimapTexture() {
-	sf::Vector2f(mapWidth, mapHeight);
-    minimap.setSize(sf::Vector2f(100,100));
-	minimap.setPosition(sf::Vector2f(window.getSize().x - minimap.getSize().x - 2, window.getSize().y - minimap.getSize().y - 2));
+	point(mapWidth, mapHeight);
+    minimap.setSize(point(100,100));
+	minimap.setPosition(point(window.getSize().x - minimap.getSize().x - 2, window.getSize().y - minimap.getSize().y - 2));
     minimap.setFillColor(sf::Color{ 201, 201, 210 });
     minimap.setOutlineThickness(2);
     minimap.setOutlineColor(sf::Color{ 150,150,150 });
 }
 
-sf::Vector2f UI::getPositionOnMinimap(sf::Vector2f position) {
+point UI::getPositionOnMinimap(point position) {
 	return minimap.getPosition() + 
-		sf::Vector2f{ position.x / Global::mapWidth * minimap.getSize().x ,
-					  position.y / Global::mapHeight * minimap.getSize().y };
+		point{ position.x / mapWidth * minimap.getSize().x ,
+					  position.y / mapHeight * minimap.getSize().y };
 }
 
 void UI::drawMinimap() {

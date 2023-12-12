@@ -1,37 +1,34 @@
 #include <iostream>
 #include "Player.h"
+#include "Global.h"
+#include "Data.h"
 
-Player::Player(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth) :
+Player::Player(float radius, const sf::Color& color, const point& position, int maxHealth) :
 	Object(radius, color, position, maxHealth), color(color) {
-	changeTurret(TurretTypes::Triplet);
-	healthBar.setSize(sf::Vector2f(radius * 2.0f, 4.0f));
+	changeTurret(TurretTypes::TriAngle);
+	healthBar.setSize(point(radius * 2.0f, 4.0f));
 	healthBar.setFillColor(sf::Color::Red);
 	healthBar.setOrigin(healthBar.getSize().x / 2, 20);
-	healthBar.setPosition(body.getPosition().x, body.getPosition().y);
-}
-
-int Player::getExp() const {
-	return exp;
+	healthBar.setPosition(getPosition().x, getPosition().y);
 }
 
 void Player::AddExp(int amount) {
-	if (level > 9)
+	if (level > 45)
 		return;
-	static int const nextLevelExp[] = { 1000,2000,3000,4000,5000,6000,7000,8000,9000,100000 };
+	int exp = getExp();
 	exp += amount;
+	setExp(exp);
+
 	int need = nextLevelExp[level];
 	if (exp >= need) {
 		int count = exp / 1000;
 		remainUpgradeSkills += 1;
 		level += 1;
 		exp -= need;
+		setExp(exp);
 		if (exp >= need)
 			this->AddExp(amount - need);
 	}
-}
-
-int Player::getLevel() const {
-	return level;
 }
 
 int Player::upgradeCount() const {
@@ -48,34 +45,34 @@ void Player::changeTurret(TurretTypes type) {
 	switch (type)
 	{
 	case Player::TurretTypes::Default:
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		break;
 		//初级
 	case Player::TurretTypes::Twin:
-		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.2f, sf::Vector2f{ -10,20 }, color, 0, 1));
-		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.2f, sf::Vector2f{ 10,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.2f, point{ -10,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.2f, point{ 10,20 }, color, 0, 1));
 		break;
 	case Player::TurretTypes::Sniper:
-		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.8f, sf::Vector2f{ 0,40 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.8f, point{ 0,40 }, color, 0, 1));
 		break;
 	case Player::TurretTypes::MachineGun:
-		turrets.emplace_back(Turret(this, radius * 0.95f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.95f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		break;
 	case Player::TurretTypes::FlankGuard:
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, sf::Vector2f{ 0,20 }, color, 180, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, point{ 0,20 }, color, 180, 1));
 		break;
 		//中级
 	case Player::TurretTypes::TripleShot:
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, -45, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 45, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, -45, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 45, 1));
 		break;
 	case Player::TurretTypes::GuadTank:
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 90, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 180, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 270, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 90, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 180, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 270, 1));
 		break;
 	case Player::TurretTypes::Assassin:
 		break;
@@ -86,27 +83,27 @@ void Player::changeTurret(TurretTypes type) {
 	case Player::TurretTypes::Gunner:
 		break;
 	case Player::TurretTypes::TriAngle:
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, sf::Vector2f{ 0,20 }, color, -160, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, sf::Vector2f{ 0,20 }, color, 160, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, point{ 0,20 }, color, -160, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, point{ 0,20 }, color, 160, 1));
 		break;
 	case Player::TurretTypes::Smasher:
 		break;
 		//高级
 	case Player::TurretTypes::Triplet:
-		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 1.8f, sf::Vector2f{ -11,20 }, color, 0, 1));
-		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 1.8f, sf::Vector2f{ 11,20 }, color, 0, 1));
-		turrets.emplace_back(Turret(this, radius * 0.75f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 1.8f, point{ -11,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 1.8f, point{ 11,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.75f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		break;
 	case Player::TurretTypes::OctoTank:
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 0, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 45, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 90, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 135, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, 180, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, -45, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, -90, 1));
-		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, sf::Vector2f{ 0,20 }, color, -135, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 45, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 90, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 135, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 180, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, -45, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, -90, 1));
+		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, -135, 1));
 		break;
 	case Player::TurretTypes::Stalker:
 		break;
@@ -127,19 +124,15 @@ void Player::changeTurret(TurretTypes type) {
 	}
 }
 
-float Player::getTurretRotation() {
-	return turretRotating;
-}
-
 void Player::setTurretRotation(float degress) {
 	turretRotating = degress;
 	for (auto& turret : turrets)
 		turret.setRotation(degress);
 }
 
-void Player::calcTurretRotation(const sf::Vector2f& mousePos) {
-	sf::Vector2f turretPos = getPosition();
-	sf::Vector2f direction = mousePos - turretPos;
+void Player::calcTurretRotation(const point& mousePos) {
+	point turretPos = getPosition();
+	point direction = mousePos - turretPos;
 
 	// 计算夹角弧度
 	float radians = std::atan2(direction.y, direction.x);
@@ -170,8 +163,9 @@ void Player::reduceHealth(int amount) {
 	Object::reduceHealth(amount);
 
 	// 重新计算血条
-	float percentage = static_cast<float>(currentHealth) / maxHealth;
-	healthBar.setSize(sf::Vector2f(healthBar.getSize().x * percentage, healthBar.getSize().y));
+	int currentHealth = getHealth();
+	float percentage = static_cast<float>(currentHealth) / getmaxHealth();
+	healthBar.setSize(point(healthBar.getSize().x * percentage, healthBar.getSize().y));
 
 	// 检测是否游戏结束
 	if (!currentHealth && &Global::currentPlayer == this) {
@@ -182,6 +176,7 @@ void Player::reduceHealth(int amount) {
 void Player::checkMove(float moveSpeed) {
 	bool noXAcceleration = true;
 	bool noYAcceleration = true;
+	auto Acceleration = getAcceleration();
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
 		if (Acceleration.x > 0)
 			Acceleration.x = 0.0f;
@@ -212,6 +207,7 @@ void Player::checkMove(float moveSpeed) {
 	if (noYAcceleration) {
 		Acceleration.y = 0.0f;
 	}
+	setAcceleration(Acceleration);
 }
 
 void Player::checkCollision() {
@@ -222,7 +218,7 @@ void Player::checkCollision() {
 			reduceHealth(resource.getHealth());
 			resource.reduceHealth(health);
 			if (resource.getHealth() <= 0)
-				AddExp(500);
+				AddExp(resource.getExp());
 		}
 	}
 }
@@ -242,10 +238,10 @@ float Player::getBulletRadius(){
 	return 5.f;
 }
 
-bool Player::fire(sf::Vector2f target) {
+bool Player::fire(point target) {
 	if (checkShot()) {
 		for (auto& turret : turrets) {
-			auto backVel = turret.fire(this, target);
+			auto backVel = recoil * turret.fire(this, target);
 			setVelocity(getVelocity() - backVel);
 		}
 		resetShot();
@@ -260,25 +256,7 @@ void Player::update() {
 	timeSinceLastShot += Global::deltaTime;
 }
 
-sf::Color Player::getColor() const {
-	return color;
-}
 
-int Player::getDamage() const {
-	return bulletDamage;
-}
-
-float Player::getBulletSpeedMulti() const {
-	return bulletSpeedMulti;
-}
-
-float Player::getBulletPenetration() const {
-	return bulletPenetration;
-}
-
-int Player::getBulletDamage() const {
-	return bulletDamage;
-}
 
 void Player::upgradeBulletSpeed(float amount) {
 	if (!remainUpgradeSkills)
@@ -327,7 +305,7 @@ ObjectType Player::WhatAmI() {
 void Player::move(float x, float y) {
 	Object::move(x, y);
 
-	sf::Vector2f pos = body.getPosition();
+	auto pos = getPosition();
 	for (auto& turret : turrets)
 		turret.setPosition(pos.x, pos.y);
 	healthBar.setPosition(pos.x, pos.y);

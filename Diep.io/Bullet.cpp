@@ -1,20 +1,14 @@
 #include "Bullet.h"
 #include "AIPlayer.h"
+#include "Data.h"
+#include "Global.h"
 
-Bullet::Bullet(Player* owner, sf::Vector2f pos)
+Bullet::Bullet(Player* owner, point pos)
 	: owner(owner),
 	bulletSpeedMulti(owner->getBulletSpeedMulti()),
 	bulletPenetration(owner->getBulletPenetration()),
 	bulletDamage(owner->getBulletDamage()),
 	Object(owner->getBulletRadius(), owner->getColor(), pos, owner->getBulletDamage()) {
-}
-
-float Bullet::getBulletSpeed() const {
-	return bulletDefaultSpeed;
-}
-
-int Bullet::getDamage() const {
-	return bulletDamage;
 }
 
 bool Bullet::sameOwner(const Bullet* target) const {
@@ -27,10 +21,6 @@ bool Bullet::isMyOwner(const Object* target) const {
 
 bool Bullet::isAI() const {
 	return owner->isAI();
-}
-
-Player* Bullet::getOwner() const {
-	return owner;
 }
 
 bool Bullet::isVivid() const {
@@ -79,8 +69,7 @@ void Bullet::checkCollision() {
 				getOwner()->AddExp(500);
 			else {
 				// 为资源添加后坐力
-				sf::Vector2f impactDirection = getVelocity();
-				sf::Vector2f newVelocity = resource.getVelocity() + 0.2f * impactDirection;
+				auto newVelocity = resource.getVelocity() + 0.2f * getVelocity();
 				resource.setVelocity(newVelocity);
 			}
 		}
@@ -99,19 +88,19 @@ void Bullet::checkCollision() {
 }
 
 float Bullet::evaluateDistance() const {
-	sf::Vector2f vel = Velocity;
+	point vel = getVelocity();
 	float delta = Global::deltaTime;
-	vel += Acceleration * delta;
+	vel += getAcceleration() * delta;
 
-	return std::sqrt(vel.x * vel.x + vel.y * vel.y);
+	return vel.length();
 }
 
-sf::Vector2f Bullet::evaluatePosition() {
-	sf::Vector2f vel = Velocity;
+point Bullet::evaluatePosition() {
+	point vel = getVelocity();
 	float delta = Global::deltaTime;
-	vel += Acceleration * delta;
+	vel += getAcceleration() * delta;
 
-	return getPosition() + Velocity * delta * bulletSpeedMulti;
+	return getPosition() + vel * delta * bulletSpeedMulti;
 }
 
 void Bullet::update() {
@@ -121,16 +110,18 @@ void Bullet::update() {
 	float delta = Global::deltaTime;
 
 	// 速度更新
-	Velocity += Acceleration * delta;
+	point vel = getVelocity();
+	vel += getAcceleration() * delta;
 
 	// 移动子弹
-	move(Velocity.x * delta * bulletSpeedMulti, Velocity.y * delta * bulletSpeedMulti);
+	move(vel.x * delta * bulletSpeedMulti, vel.y * delta * bulletSpeedMulti);
 
-	float currentSpeed = std::sqrt(Velocity.x * Velocity.x + Velocity.y * Velocity.y);
+	float currentSpeed = vel.length();
 
-	if (currentSpeed > MaxSpeed) {
-		Velocity = (Velocity / currentSpeed) * MaxSpeed;
-	}
+	if (currentSpeed > getMaxSpeed())
+		vel = (vel / currentSpeed) * getMaxSpeed();
+
+	setVelocity(vel);
 }
 
 ObjectType Bullet::WhatAmI() {
@@ -138,13 +129,13 @@ ObjectType Bullet::WhatAmI() {
 }
 
 void Bullet::move(float x, float y) {
-	sf::Vector2f curPos = body.getPosition();
-	sf::FloatRect bounds = body.getGlobalBounds();
+	point curPos = getPosition();
+	sf::FloatRect bounds = getGlobalBounds();
 
 	if (curPos.x + x <= 0 ||
-		curPos.x + x + bounds.width >= Global::mapWidth ||
+		curPos.x + x + bounds.width >= mapWidth ||
 		curPos.y + y <= 0 ||
-		curPos.y + y + bounds.height >= Global::mapHeight)
+		curPos.y + y + bounds.height >= mapHeight)
 		reduceHealth(10);
 
 	Object::move(x, y);

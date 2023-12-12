@@ -13,15 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="源文件\Network">
+    <Filter Include="头文件\Network">
       <UniqueIdentifier>{c08b3ad1-a21c-4d8b-9103-08e95ad8d1c2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="diep.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Bullet.h">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Bullet.cpp">
@@ -30,13 +27,7 @@
     <ClCompile Include="Player.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="UI.h">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="UI.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Random.h">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="AIPlayer.cpp">
@@ -45,28 +36,46 @@
     <ClCompile Include="Object.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Bullet.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Random.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="UI.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Turret.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Object.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Global.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Player.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="AIPlayer.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Menu.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="Network.h">
-      <Filter>源文件\Network</Filter>
+      <Filter>头文件\Network</Filter>
     </ClInclude>
     <ClInclude Include="Packet.h">
-      <Filter>源文件\Network</Filter>
+      <Filter>头文件\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="AIPlayer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Global.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Turret.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Data.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

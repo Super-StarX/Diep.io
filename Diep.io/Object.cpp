@@ -2,6 +2,7 @@
 #include "AIPlayer.h"
 #include "Random.h"
 #include "Global.h"
+#include "Data.h"
 
 static int curObjectId = 0;
 
@@ -11,7 +12,18 @@ void setOrigin(T shape) {
 	shape.setOrigin(Bounds.width / 2, Bounds.height / 2);
 }
 
-Object::Object(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth)
+ResourceType randomResourceType() {
+	float randomNum = random::randomFloat(0, 100);
+	if (randomNum < 1)
+		return ResourceType::AlphaPentagon;
+	else if (randomNum < 5)
+		return ResourceType::Pentagon;
+	else if (randomNum < 20)
+		return ResourceType::Triangle;
+	return ResourceType::Square;
+}
+
+Object::Object(float radius, const sf::Color& color, const point& position, int maxHealth)
 	: body(radius), maxHealth(maxHealth), currentHealth(maxHealth) {
 	// 将炮塔原点设置为其局部边界的中心
 	body.setOrigin(radius, radius);
@@ -35,77 +47,112 @@ Object::Object(float radius, const sf::Color& color, const sf::Vector2f& positio
 	ID = curObjectId++;
 }
 
-Object::~Object() {
+Object::Object(ResourceType type, const point& position) {
+	// 将炮塔原点设置为其局部边界的中心
+	isPolygon = true;
+	switch (type)
+	{
+	case ResourceType::Square:
+		polygonBody.setPointCount(4);	
+		polygonBody.setPoint(0, point(10, 10));
+		polygonBody.setPoint(1, point(-10, 10));
+		polygonBody.setPoint(2, point(-10, -10));
+		polygonBody.setPoint(3, point(10, -10));
+		polygonBody.setFillColor(sf::Color(255, 232, 105));
+		polygonBody.setOutlineColor(sf::Color(191, 174, 78));
+		polygonRadius = 12;
+		maxHealth = 10;
+		exp = 10;
+		break;
+	case ResourceType::Triangle:
+		polygonBody.setPointCount(3);
+		polygonBody.setPoint(0, point(15,9));
+		polygonBody.setPoint(1, point(-15, 9));
+		polygonBody.setPoint(2, point(0, -18));
+		polygonBody.setFillColor(sf::Color(252, 118, 119));
+		polygonBody.setOutlineColor(sf::Color(183, 86, 87));
+		polygonRadius = 13;
+		maxHealth = 30;
+		exp = 25;
+		break;
+	case ResourceType::Pentagon:
+		polygonBody.setPointCount(5);
+		polygonBody.setPoint(0, point(20, 8)); 
+		polygonBody.setPoint(1, point(0, 20));
+		polygonBody.setPoint(2, point(-20, 8)); 
+		polygonBody.setPoint(3, point(-12, -16));
+		polygonBody.setPoint(4, point(12, -16));
+		polygonBody.setFillColor(sf::Color(118, 148, 252));
+		polygonBody.setOutlineColor(sf::Color(85, 101, 109));
+		polygonRadius = 16;
+		maxHealth = 100;
+		exp = 130;
+		break;
+	case ResourceType::AlphaPentagon:
+		polygonBody.setPointCount(5);
+		polygonBody.setPoint(0, point(100, 40));
+		polygonBody.setPoint(1, point(0, 100)); 
+		polygonBody.setPoint(2, point(-100, 40));
+		polygonBody.setPoint(3, point(-60, -80)); 
+		polygonBody.setPoint(4, point(60, -80));
+		polygonBody.setFillColor(sf::Color(118, 148, 252));
+		polygonBody.setOutlineColor(sf::Color(85, 101, 109));
+		polygonRadius = 80;
+		maxHealth = 3000;
+		exp = 3000;
+		break;
+	default:
+		break;
+	}
+	polygonBody.setPosition(position);
+	polygonBody.setOutlineThickness(3);
+	setOrigin(polygonBody);
+	polygonBody.setRotation(random::randomFloat(0, 314));
+
+	currentHealth = maxHealth;
+	healthText.setFont(Global::font);
+	healthText.setCharacterSize(20);
+	healthText.setFillColor(sf::Color::White);
+	setOrigin(healthText);
+	healthText.setPosition(polygonBody.getPosition());
+	std::ostringstream ss;
+	ss << maxHealth;
+	healthText.setString(ss.str());
+	ID = curObjectId++;
 }
 
-sf::FloatRect Object::getGlobalBounds() {
-	return body.getGlobalBounds();
+Object::~Object() {
 }
 
 void Object::setID(int id) {
 	ID = id;
 }
 
-const int Object::getID() const {
-	return ID;
-}
-
-void Object::setVelocity(const sf::Vector2f& vel) {
+void Object::setVelocity(const point& vel) {
 	Velocity = vel;
 }
 
-const sf::Vector2f& Object::getVelocity() const {
-	return Velocity;
-}
-
-void Object::setAcceleration(const sf::Vector2f& vel) {
+void Object::setAcceleration(const point& vel) {
 	Acceleration = vel;
-}
-
-const sf::Vector2f& Object::getAcceleration() const {
-	return Acceleration;
-}
-
-float Object::getSpeed() {
-	return std::sqrt(Velocity.x * Velocity.x + Velocity.y * Velocity.y);
-}
-
-float Object::getMaxSpeed() {
-	return MaxSpeed;
-}
-
-void Object::setMaxSpeed(float spd) {
-	MaxSpeed = spd;
-}
-
-float Object::getRadius() {
-	return body.getRadius();
-}
-
-sf::Vector2f Object::getPosition() {
-	return body.getPosition();
 }
 
 void Object::setPosition(float x, float y) {
 	body.setPosition(x, y);
+	polygonBody.setPosition(x, y);
 	healthText.setPosition(x, y);
 }
 
-float Object::getTurretRotation() {
-	return 0;
-}
-
 bool Object::collideWith(Object& other, float extraDistance) {
-	sf::Vector2f distanceVec = getPosition() - other.getPosition();
+	point distanceVec = getPosition() - other.getPosition();
 	float distance = std::sqrt(distanceVec.x * distanceVec.x + distanceVec.y * distanceVec.y);
 	float minDistance = getRadius() + other.getRadius() + extraDistance;
 	return distance < minDistance;
 }
 
 bool Object::collideWith(const Object& other) const {
-	double distance = std::sqrt(std::pow(body.getPosition().x - other.body.getPosition().x, 2) +
-		std::pow(body.getPosition().y - other.body.getPosition().y, 2));
-	return distance <= body.getRadius() + other.body.getRadius();
+	double distance = std::sqrt(std::pow(getPosition().x - other.getPosition().x, 2) +
+		std::pow(getPosition().y - other.getPosition().y, 2));
+	return distance <= getRadius() + other.getRadius();
 }
 
 void Object::randomAddToMap() {
@@ -152,8 +199,8 @@ void Object::reduceHealth(int amount) {
 	}
 }
 
-int Object::getHealth() const {
-	return currentHealth;
+void Object::setMaxSpeed(float spd) {
+	MaxSpeed = spd;
 }
 
 void Object::setHealth(int health) {
@@ -165,12 +212,12 @@ void Object::update() {
 
 	//速度更新
 	Velocity += Acceleration * delta;
-	float inertia = pow(Global::inertia, delta); // 惯性^delta
+	float curInertia = pow(inertia, delta); // 惯性^delta
 	if (!Acceleration.x)
-		Velocity.x *= inertia;
+		Velocity.x *= curInertia;
 
 	if (!Acceleration.y)
-		Velocity.y *= inertia;
+		Velocity.y *= curInertia;
 
 	// 将炮台速度限制在最大速度范围内
 	float currentSpeed = getSpeed();
@@ -199,21 +246,25 @@ ObjectType Object::WhatAmI() {
 }
 
 void Object::move(float x, float y) {
-	sf::Vector2f curPos = body.getPosition();
-	sf::FloatRect playerBounds = body.getGlobalBounds();
+	point curPos = getPosition();
+	sf::FloatRect playerBounds = getGlobalBounds();
 
 	if (curPos.x + x < 0 ||
-		curPos.x + x + playerBounds.width > Global::mapWidth)
+		curPos.x + x + playerBounds.width > mapWidth)
 		x = 0;
 	if (curPos.y + y < 0 ||
-		curPos.y + y + playerBounds.height > Global::mapHeight)
+		curPos.y + y + playerBounds.height > mapHeight)
 		y = 0;
 
+	polygonBody.move(x, y);
 	body.move(x, y);
 	healthText.move(x, y);
 }
 
 void Object::draw(sf::RenderTarget& target, sf::RenderStates states) const {
-	target.draw(body, states);
+	if (isPolygon)
+		target.draw(polygonBody, states);
+	else
+		target.draw(body, states);
 	target.draw(healthText, states);
 }

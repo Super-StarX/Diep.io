@@ -1,10 +1,11 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <sstream>
-#include "Global.h"
+#include "Data.h"
 
 template <class T>
 void setOrigin(T shape);
+ResourceType randomResourceType();
 
 enum class ObjectType {
 	Object,
@@ -23,43 +24,54 @@ Bullet 检测所有resource和player的碰撞
 
 class Object : public sf::Drawable {
 public:
-	Object(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth);
+	Object(float radius, const sf::Color& color, const point& position, int maxHealth);
+	Object(ResourceType type, const point& position);
 	~Object();
+	
+	const int getID() const { return ID; }
+	point getPosition() const { return isPolygon ? polygonBody.getPosition() : body.getPosition(); }
+	sf::FloatRect getGlobalBounds() const { return isPolygon ? polygonBody.getGlobalBounds() : body.getGlobalBounds(); }
+	const point& getVelocity() const { return Velocity; }
+	const point& getAcceleration() const { return Acceleration; }
+	float getSpeed() const { return std::sqrt(Velocity.x * Velocity.x + Velocity.y * Velocity.y); }
+	float getMaxSpeed() const { return MaxSpeed; }
+	float getRadius() const { return isPolygon ? polygonRadius : body.getRadius(); }
+	int getmaxHealth() const { return maxHealth; }
+	int getHealth() const { return currentHealth; }
+	int getExp() const { return exp; }
 
-	sf::FloatRect getGlobalBounds();
 	void setID(int id);
-	const int getID() const;
-	void setVelocity(const sf::Vector2f& vel);
-	const sf::Vector2f& getVelocity() const;
-	void setAcceleration(const sf::Vector2f& vel);
-	const sf::Vector2f& getAcceleration() const;
-	float getSpeed();
-	float getMaxSpeed();
 	void setMaxSpeed(float spd);
-	float getRadius();
-	sf::Vector2f getPosition();
+	void setVelocity(const point& vel);
+	void setAcceleration(const point& vel);
 	void setPosition(float x, float y);
+	void setExp(int amount) { exp = amount; }
 	bool collideWith(Object& other, float extraDistance);
 	bool collideWith(const Object& other) const;
 	void randomAddToMap();
 	void reduceHealth(int amount);
-	int getHealth() const;
 	void setHealth(int health);
-	void update();
+
+	virtual void update();
 	virtual bool isVivid();
 	virtual ObjectType WhatAmI();
-	virtual float getTurretRotation();
+	virtual float getTurretRotation() const { return 0; }
 
 protected:
 	virtual void move(float x, float y);
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
+private:
 	int ID;
+	bool isPolygon{ false };
 	sf::CircleShape body;
-	int maxHealth;
-	int currentHealth;
+	sf::ConvexShape polygonBody;
+	float polygonRadius{ 0.f };
+	int exp{ 0 };
+	int maxHealth{ 0 };
+	int currentHealth{ 0 };
 	sf::Text healthText;
-	sf::Vector2f Acceleration;
-	sf::Vector2f Velocity;
+	point Acceleration;
+	point Velocity;
 	float MaxSpeed{ 150.0f };
 };

@@ -5,7 +5,7 @@
 
 class Player : public Object {
 public:
-	Player(float radius, const sf::Color& color, const sf::Vector2f& position, int maxHealth);
+	Player(float radius, const sf::Color& color, const point& position, int maxHealth);
 
 	enum class TurretTypes
 	{
@@ -48,34 +48,29 @@ public:
 		Booster,//移速超快
 		Landmine,//静止隐形
 		Spike//反弹子弹
-
 	};
 
-	virtual bool isAI();
-	virtual float getBulletRadius();
+	int getLevel() const { return level; }
+	sf::Color getColor() const { return color; }
+	int getDamage() const { return bulletDamage; }
+	float getBulletSpeedMulti() const { return bulletSpeedMulti; }
+	float getBulletPenetration() const { return bulletPenetration; }
+	int getBulletDamage() const { return bulletDamage; }
+	float getAccuracy() const { return accuracy; }
+
 	void changeTurret(TurretTypes type);
-	float getTurretRotation();
 	void setTurretRotation(float degress);
-	void calcTurretRotation(const sf::Vector2f& mousePos);
+	void calcTurretRotation(const point& mousePos);
 	bool checkShot();
 	void resetShot();
 	void setPosition(float x, float y);
 	void reduceHealth(int amount);
 	void checkMove(float moveSpeed);
 	void checkCollision();
-	bool fire(sf::Vector2f target);
-	void update();
+	bool fire(point target);
 
-	int getExp() const;
 	void AddExp(int amount);
-	int getLevel() const;
 	int upgradeCount() const;
-	sf::Color getColor() const;
-	int getDamage() const;
-	float getBulletSpeedMulti() const;
-	float getBulletPenetration() const;
-	int getBulletDamage() const;
-
 	void upgradeBulletSpeed(float amount);
 	void upgradeBulletPenetration(float amount);
 	void upgradeBulletDamage(int amount);
@@ -83,14 +78,17 @@ public:
 	void upgradeReloadInterval(float amount);
 	void upgradeMovementSpeed(float amount);
 
+	virtual void update();
+	virtual bool isAI();
+	virtual float getBulletRadius();
+	virtual float getTurretRotation() const { return turretRotating; }
+
 protected:
 	virtual ObjectType WhatAmI();
 	virtual void move(float x, float y);
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
 private:
-
-	int exp{ 0 };
 	int level{ 1 };
 	int remainUpgradeSkills{ 0 };
 	int remainUpgradeType{ 0 };
@@ -114,6 +112,6 @@ private:
 	//float movementSpeed;MaxSpeed
 
 	//hide data
-	float accuracy{ 20.f };
-	float recoil{ 3.f };
+	float accuracy{ 20.f };//不精准度
+	float recoil{ 3.f };//后坐力
 };

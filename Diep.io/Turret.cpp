@@ -2,10 +2,11 @@
 #include "Turret.h"
 #include "Player.h"
 #include "Random.h"
+#include "Global.h"
 
-Turret::Turret(Player* owner, float sizeX, float sizeY, sf::Vector2f offest, sf::Color color, float offestDir, float scale) :
+Turret::Turret(Player* owner, float sizeX, float sizeY, point offest, sf::Color color, float offestDir, float scale) :
 	offestDir(offestDir), offest(offest) {
-	shape.setSize(sf::Vector2f(sizeX, sizeY));
+	shape.setSize(point(sizeX, sizeY));
 	shape.setFillColor(sf::Color{ 158,158,158 });
 	shape.setOrigin(sizeX / 2 + offest.x, sizeY / 2 + offest.y);
 	shape.setPosition(owner->getPosition());
@@ -22,30 +23,26 @@ void Turret::setPosition(float x, float y) {
 	shape.setPosition(x, y);
 }
 
-sf::Vector2f Turret::fire(Player* owner, sf::Vector2f target) const {
-	auto orgin = offest;
+point Turret::fire(Player* owner, point target) const {
+	point orgin = offest;
 	orgin.y += shape.getSize().y / 2;
-	float rad = (owner->getTurretRotation() + offestDir) / (180.0f / 3.14159265f);
-	float x = orgin.x * cos(rad) + orgin.y * sin(rad);
-	float y = orgin.x * sin(rad) - orgin.y * cos(rad);
+	orgin.y *= -1;
 
-	Bullet bullet(owner, shape.getPosition() + sf::Vector2f{ x,y });
-	sf::Vector2f firePos = owner->getPosition();
-	sf::Vector2f direction = target - firePos;
+	float rad = math::rad(owner->getTurretRotation() + offestDir);
+	Bullet bullet(owner, shape.getPosition() + orgin.rotation(rad));
 
-	direction.x += random::randomFloat(-20, 20);
-	direction.y += random::randomFloat(-20, 20);
-	if (offestDir) {
-		rad = offestDir * 3.14159265f / 180.f;
-		x = direction.x * cos(rad) - direction.y * sin(rad);
-		y = direction.x * sin(rad) + direction.y * cos(rad);
-		direction = { x,y };
-	}
+	// 计算子弹发射角度
+	point firePos = owner->getPosition();
+	point direction = target - firePos;
 
-	float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-	bullet.setVelocity(direction / length * bullet.getBulletSpeed());
+	float accuracy = owner->getAccuracy();
+	rad = math::rad(offestDir + random::randomFloat(-accuracy, accuracy));
+	auto dir = direction.rotation(rad);
+
+	float length = dir.length();
+	bullet.setVelocity(dir / length * bullet.getBulletSpeed());
 	bullets.emplace_back(bullet);
-	return 3.f * direction / length;
+	return dir / length;
 }
 
 void Turret::draw(sf::RenderTarget& target, sf::RenderStates states) const {

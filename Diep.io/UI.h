@@ -1,10 +1,11 @@
 #include <SFML/Graphics.hpp>
 #include "Global.h"
+#include "Data.h"
 
 class Button {
 public:
 	Button(std::string text, float width, float height, sf::Color color, void (*callbackFunction)())
-		: buttonShape(sf::Vector2f(width, height)), action(callbackFunction) {
+		: buttonShape(point(width, height)), action(callbackFunction) {
 		buttonShape.setFillColor(color);
 		buttonShape.setOutlineThickness(2);
 		buttonShape.setOutlineColor(sf::Color{ color.r,color.g,color.b });
@@ -90,7 +91,7 @@ public:
 	}
 
 	void initialiseMinimapTexture();
-	sf::Vector2f getPositionOnMinimap(sf::Vector2f position);
+	point getPositionOnMinimap(point position);
 	void drawMinimap();
 	void drawGameOver();
 	void draw();

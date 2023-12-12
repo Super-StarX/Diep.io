@@ -2,23 +2,25 @@
 
 #include "Object.h"
 
-static int bulletLife = 300;
+class Player;
 class Bullet : public Object {
 public:
-	Bullet(Player* owner, sf::Vector2f pos);
+	Bullet(Player* owner, point pos);
 
-	float getBulletSpeed() const;
-	int getDamage() const;
+	float getBulletSpeed() const { return bulletDefaultSpeed; }
+	int getDamage() const { return bulletDamage; }
+	Player* getOwner() const { return owner; }
+
 	bool sameOwner(const Bullet* target) const;
 	bool isMyOwner(const Object* target) const;
 	bool isAI() const;
-	Player* getOwner() const;
 	bool isVivid() const;
 	void reduceHealth(int amount);
 	void checkCollision();
 	float evaluateDistance() const;
-	sf::Vector2f evaluatePosition();
-	void update();
+	point evaluatePosition();
+
+	virtual void update();
 
 protected:
 	virtual ObjectType WhatAmI() override;

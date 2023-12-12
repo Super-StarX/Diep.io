@@ -65,7 +65,7 @@ public:
 
 				connectedPeers.emplace_back(sender, port);
 				// 有人加入, 给他分配id
-				Player newPlayer(15.f, sf::Color::Blue, sf::Vector2f(400, 300), 1000);
+				Player newPlayer(15.f, sf::Color::Blue, point(400, 300), 1000);
 				//newPlayer.randomAddToMap();
 				newPlayer.setPosition(450, 350);
 				players.push_back(newPlayer);
@@ -124,10 +124,10 @@ public:
 				InitSyncData initData;
 				packet >> initData;
 
-				Object resource(10.f, sf::Color::Green, sf::Vector2f(initData.x, initData.y), 100);
+				Object resource(10.f, sf::Color::Green, point(initData.x, initData.y), 100);
 				resource.setID(initData.id);
-				resource.setVelocity(sf::Vector2f(initData.vx, initData.vy));
-				resource.setAcceleration(sf::Vector2f(initData.ax, initData.ay));
+				resource.setVelocity(point(initData.vx, initData.vy));
+				resource.setAcceleration(point(initData.ax, initData.ay));
 				resources.push_back(resource);
 
 				break;
@@ -138,10 +138,10 @@ public:
 				InitSyncData initData;
 				packet >> initData;
 
-				Player enemy(15.f, sf::Color::Blue, sf::Vector2f(initData.x, initData.y), 1000);
+				Player enemy(15.f, sf::Color::Blue, point(initData.x, initData.y), 1000);
 				enemy.setID(initData.id);
-				enemy.setVelocity(sf::Vector2f(initData.vx, initData.vy));
-				enemy.setAcceleration(sf::Vector2f(initData.ax, initData.ay));
+				enemy.setVelocity(point(initData.vx, initData.vy));
+				enemy.setAcceleration(point(initData.ax, initData.ay));
 				enemy.setTurretRotation(initData.turretRotation);
 				players.push_back(enemy);
 
@@ -153,10 +153,10 @@ public:
 				InitSyncData initData;
 				packet >> initData;
 
-				AIPlayer enemy(15.f, sf::Color::Red, sf::Vector2f(initData.x, initData.y), 100);
+				AIPlayer enemy(15.f, sf::Color::Red, point(initData.x, initData.y), 100);
 				enemy.setID(initData.id);
-				enemy.setVelocity(sf::Vector2f(initData.vx, initData.vy));
-				enemy.setAcceleration(sf::Vector2f(initData.ax, initData.ay));
+				enemy.setVelocity(point(initData.vx, initData.vy));
+				enemy.setAcceleration(point(initData.ax, initData.ay));
 				enemy.setTurretRotation(initData.turretRotation);
 				enemies.push_back(enemy);
 
@@ -173,9 +173,9 @@ public:
 						[=](AIPlayer& p) { return p.getID() == initData.id; });
 
 					if (it != enemies.end()) {
-						Bullet bullet(&*it, sf::Vector2f(initData.x, initData.y));
-						bullet.setVelocity(sf::Vector2f(initData.vx, initData.vy));
-						bullet.setAcceleration(sf::Vector2f(initData.ax, initData.ay));
+						Bullet bullet(&*it, point(initData.x, initData.y));
+						bullet.setVelocity(point(initData.vx, initData.vy));
+						bullet.setAcceleration(point(initData.ax, initData.ay));
 						bullets.push_back(bullet);
 					}
 				}
@@ -184,9 +184,9 @@ public:
 						[=](Player& p) { return p.getID() == initData.id; });
 
 					if (it != players.end()) {
-						Bullet bullet(&*it, sf::Vector2f(initData.x, initData.y));
-						bullet.setVelocity(sf::Vector2f(initData.vx, initData.vy));
-						bullet.setAcceleration(sf::Vector2f(initData.ax, initData.ay));
+						Bullet bullet(&*it, point(initData.x, initData.y));
+						bullet.setVelocity(point(initData.vx, initData.vy));
+						bullet.setAcceleration(point(initData.ax, initData.ay));
 						bullets.push_back(bullet);
 					}
 				}
@@ -205,8 +205,8 @@ public:
 
 				if (it != players.end()) {
 					it->setPosition(positionData.x, positionData.y);
-					it->setVelocity(sf::Vector2f(positionData.vx, positionData.vy));
-					it->setAcceleration(sf::Vector2f(positionData.ax, positionData.ay));
+					it->setVelocity(point(positionData.vx, positionData.vy));
+					it->setAcceleration(point(positionData.ax, positionData.ay));
 					it->setTurretRotation(positionData.turretRotation);
 				}
 				break;
@@ -221,7 +221,7 @@ public:
 					[=](Player& p) { return p.getID() == fireEventData.id; });
 
 				if (it != players.end()) {
-					sf::Vector2f target{ fireEventData.targetX, fireEventData.targetY };
+					point target{ fireEventData.targetX, fireEventData.targetY };
 					it->fire(target);
 				}
 				break;
@@ -238,8 +238,8 @@ public:
 
 				if (it != enemies.end()) {
 					it->setPosition(positionData.x, positionData.y);
-					it->setVelocity(sf::Vector2f(positionData.vx, positionData.vy));
-					it->setAcceleration(sf::Vector2f(positionData.ax, positionData.ay));
+					it->setVelocity(point(positionData.vx, positionData.vy));
+					it->setAcceleration(point(positionData.ax, positionData.ay));
 					it->setTurretRotation(positionData.turretRotation);
 				}
 				break;
@@ -282,6 +282,7 @@ public:
 					break;
 				}
 				}
+				break;
 			}
 			default:
 				std::cout << "Unknown packet type received" << std::endl;
@@ -312,7 +313,7 @@ public:
 		}
 	}
 
-	void sendPlayerFireEvent(sf::Vector2f dir) {
+	void sendPlayerFireEvent(point dir) {
 		sf::Packet packet;
 		packet << PacketType::PlayerFireEvent;
 		packet << FireEventData{ player.getID(), dir.x, dir.y };
@@ -338,7 +339,7 @@ public:
 		sendToAllPlayers(packet);
 	}
 
-	void sendPlayerResource(sf::Vector2f pos) {
+	void sendPlayerResource(point pos) {
 		sf::Packet packet;
 		packet << PacketType::SyncResourceStatus;
 		packet << InitSyncData{ player.getID(),

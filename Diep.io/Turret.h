@@ -6,16 +6,16 @@ class Player;
 class Turret
 {
 public:
-	Turret(Player* owner, float sizeX, float sizeY, sf::Vector2f offest, sf::Color color, float offestDir, float scale);
+	Turret(Player* owner, float sizeX, float sizeY, point offest, sf::Color color, float offestDir, float scale);
 	~Turret() = default;
 
 	void setRotation(float dir);
 	void setPosition(float x, float y);
-	sf::Vector2f fire(Player* owner, sf::Vector2f target) const;
+	point fire(Player* owner, point target) const;
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
 private:
 	sf::RectangleShape shape;
-	sf::Vector2f offest{ 0.f,0.f };
+	point offest{ 0.f,0.f };
 	float offestDir{ 0.f };
 };

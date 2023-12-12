@@ -18,11 +18,8 @@ public:
 	static Menu menu;
 	static NetworkManager networkManager;
 
-	static constexpr int mapWidth = 5000;
-	static constexpr int mapHeight = 5000;
 
 	static float deltaTime;
-	static float inertia;
 	static Player currentPlayer;
 	static std::vector<Player> playersVector;
 	static std::vector<Bullet> bulletVector;
@@ -33,8 +30,6 @@ public:
 #define window Global::window
 #define menu Global::menu
 #define networkManager Global::networkManager
-#define mapWidth Global::mapWidth
-#define mapHeight Global::mapHeight
 
 #define players Global::playersVector
 #define player Global::currentPlayer
