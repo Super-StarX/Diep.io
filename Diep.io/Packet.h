@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Network.hpp>
+#include "Data.h"
 
 // 数据类型
 enum class PacketType {
@@ -94,17 +95,17 @@ sf::Packet& operator>>(sf::Packet& packet, FireEventData& fireEventData) {
 // 有人死了包
 struct ObjectDieData {
 	int id;
-	ObjectType type;
+	ObjectType objType;
 };
 
 sf::Packet& operator<<(sf::Packet& packet, const ObjectDieData& fireEventData) {
-	return packet << fireEventData.id << static_cast<unsigned char>(fireEventData.type);
+	return packet << fireEventData.id << static_cast<unsigned char>(fireEventData.objType);
 }
 
 sf::Packet& operator>>(sf::Packet& packet, ObjectDieData& fireEventData) {
 	packet >> fireEventData.id;
 	unsigned char type;
 	packet >> type;
-	fireEventData.type = static_cast<ObjectType>(type);
+	fireEventData.objType = static_cast<ObjectType>(type);
 	return  packet;
 }

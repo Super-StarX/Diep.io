@@ -1,24 +1,26 @@
-#include "AIPlayer.h"
+ï»¿#include "AIPlayer.h"
 #include "Bullet.h"
 #include "Global.h"
 #include "Data.h"
+#include "Network.h"
 
 AIPlayer::AIPlayer(float radius, const sf::Color& color, const point& position, int maxHealth) :
     Player(radius, color, position, maxHealth) {
+    helper::add(enemies, this);
 }
 
-bool AIPlayer::isAI() {
-    return true;
+AIPlayer::~AIPlayer() {
+    helper::erase(enemies, this);
 }
 
 void AIPlayer::checkCollision() {
     Player::checkCollision();
 
-    for (auto& enemy : enemies) {
-        if (&enemy != this && collideWith(enemy)) {
+    for (auto enemy : enemies) {
+        if (enemy != this && isCollideWith(enemy)) {
             int health = getHealth();
-            reduceHealth(enemy.getHealth());
-            enemy.reduceHealth(health);
+            reduceHealth(enemy->getHealth());
+            enemy->reduceHealth(health);
         }
     }
 }
@@ -28,41 +30,40 @@ float AIPlayer::fastDistance(const point& a, const point& b) {
 }
 
 float AIPlayer::evaluateSafety(const point& position) {
-    // ³õÊ¼»¯µÃ·Ö
+    // åˆå§‹åŒ–å¾—åˆ†
     float score = 0.0f;
 
-    // ¼ì²éÊÇ·ñ¿¿½ü×Óµ¯£¬²¢¸ù¾İ¾àÀë½µµÍµÃ·Ö
-    for (Bullet& bullet : bullets) {
-        float distance = fastDistance(position, bullet.evaluatePosition());
+    // æ£€æŸ¥æ˜¯å¦é è¿‘å­å¼¹ï¼Œå¹¶æ ¹æ®è·ç¦»é™ä½å¾—åˆ†
+    for (auto bullet : bullets) {
+        float distance = fastDistance(position, bullet->evaluatePosition());
         if (distance < AIThinkRange) {
             score -= (AIThinkRange - distance);
         }
     }
 
-    // ¶¨Òå×îĞ¡°²È«¾àÀë
-    constexpr float min_safe_distance = 80.0f;
+    // å®šä¹‰æœ€å°å®‰å…¨è·ç¦»
 
-    // ¼ì²éÊÇ·ñ¿¿½üÍæ¼Ò£¬²¢¸ù¾İ¾àÀë½µµÍµÃ·Ö
+    // æ£€æŸ¥æ˜¯å¦é è¿‘ç©å®¶ï¼Œå¹¶æ ¹æ®è·ç¦»é™ä½å¾—åˆ†
     {
-        float distance = fastDistance(position, player.getPosition());
+        float distance = fastDistance(position, player->getPosition());
         if (distance < min_safe_distance) {
             score -= (min_safe_distance - distance) * 10;
         }
     }
 
-    // ¼ì²éÊÇ·ñ¿¿½üÆäËûµĞÈË£¬²¢¸ù¾İ¾àÀë½µµÍµÃ·Ö
-    for (AIPlayer& enemy : enemies) {
-        if (&enemy != this) {
-            float distance = fastDistance(position, enemy.getPosition());
+    // æ£€æŸ¥æ˜¯å¦é è¿‘å…¶ä»–æ•Œäººï¼Œå¹¶æ ¹æ®è·ç¦»é™ä½å¾—åˆ†
+    for (auto enemy : enemies) {
+        if (enemy != this) {
+            float distance = fastDistance(position, enemy->getPosition());
             if (distance < min_safe_distance) {
                 score -= (min_safe_distance - distance) * 15;
             }
         }
     }
 
-    // ¼ì²éÊÇ·ñ¿¿½ü×ÊÔ´¶ÔÏó£¬²¢¸ù¾İ¾àÀë½µµÍµÃ·Ö
-    for (Object& resource : resources) {
-        float distance = fastDistance(position, resource.getPosition());
+    // æ£€æŸ¥æ˜¯å¦é è¿‘èµ„æºå¯¹è±¡ï¼Œå¹¶æ ¹æ®è·ç¦»é™ä½å¾—åˆ†
+    for (auto resource : objects) {
+        float distance = fastDistance(position, resource->getPosition());
         if (distance < min_safe_distance) {
             score -= (min_safe_distance - distance) * 10;
         }
@@ -74,40 +75,40 @@ float AIPlayer::evaluateSafety(const point& position) {
 point AIPlayer::computeNewPosition(float x, float y) {
     float move_dist = getMaxSpeed();
 
-    if (x && y) // Èç¹ûÊÇĞ±ÏòÒÆ¶¯
+    if (x && y) // å¦‚æœæ˜¯æ–œå‘ç§»åŠ¨
         move_dist /= std::sqrt(2.0f);
 
     return getPosition() + point(x * move_dist, y * move_dist);
 }
 
 void AIPlayer::think() {
-    // ¼ÆËãÓëÍæ¼ÒµÄ¾àÀë
-    point distanceVec = getPosition() - player.getPosition();
+    // è®¡ç®—ä¸ç©å®¶çš„è·ç¦»
+    point distanceVec = getPosition() - player->getPosition();
     float distance = std::sqrt(distanceVec.x * distanceVec.x + distanceVec.y * distanceVec.y);
 
-    // Èç¹ûÔÚË¼¿¼·¶Î§ÄÚ£¬Ãé×¼Íæ¼Ò²¢¿ª»ğ
+    // å¦‚æœåœ¨æ€è€ƒèŒƒå›´å†…ï¼Œç„å‡†ç©å®¶å¹¶å¼€ç«
     if (distance < AIThinkRange) {
-        calcTurretRotation(player.getPosition());
-        fire(player.getPosition());
+        calcTurretRotation(player->getPosition());
+        fire(player->getPosition());
     }
 
-    // ¶¨ÒåÒÆ¶¯·½ÏòµÄÁĞ±í
+    // å®šä¹‰ç§»åŠ¨æ–¹å‘çš„åˆ—è¡¨
     const std::vector<point> directions = {
-        {  0, -1}, // ÉÏÒÆ
-        {  0,  1}, // ÏÂÒÆ
-        { -1,  0}, // ×óÒÆ
-        {  1,  0}, // ÓÒÒÆ
-        { -1, -1}, // ×óÉÏÒÆ
-        {  1, -1}, // ÓÒÉÏÒÆ
-        { -1,  1}, // ×óÏÂÒÆ
-        {  1,  1}, // ÓÒÏÂÒÆ
-        {  0,  0}  // Ô­µØ²»¶¯
+        {  0, -1}, // ä¸Šç§»
+        {  0,  1}, // ä¸‹ç§»
+        { -1,  0}, // å·¦ç§»
+        {  1,  0}, // å³ç§»
+        { -1, -1}, // å·¦ä¸Šç§»
+        {  1, -1}, // å³ä¸Šç§»
+        { -1,  1}, // å·¦ä¸‹ç§»
+        {  1,  1}, // å³ä¸‹ç§»
+        {  0,  0}  // åŸåœ°ä¸åŠ¨
     };
 
     float best_score = -1e9;
     point best_direction;
 
-    // Ñ°ÕÒÊ¹ÆÀ¹À·ÖÊı×î¸ßµÄÒÆ¶¯·½Ïò
+    // å¯»æ‰¾ä½¿è¯„ä¼°åˆ†æ•°æœ€é«˜çš„ç§»åŠ¨æ–¹å‘
     for (const auto& dir : directions) {
         point new_position = computeNewPosition(dir.x, dir.y);
         float score = evaluateSafety(new_position);
@@ -118,10 +119,12 @@ void AIPlayer::think() {
         }
     }
 
-    // Êµ¼ÊÒÆ¶¯
+    // å®é™…ç§»åŠ¨
     setAcceleration(best_direction * 400.0f);
 }
 
-ObjectType AIPlayer::WhatAmI() {
-    return ObjectType::AIPlayer;
+void AIPlayer::update() {
+    Player::update();
+    think();
+    networkManager.sendAIStatus(this);
 }

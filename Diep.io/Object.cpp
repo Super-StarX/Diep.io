@@ -1,4 +1,4 @@
-#include "Object.h"
+ï»¿#include "Object.h"
 #include "AIPlayer.h"
 #include "Random.h"
 #include "Global.h"
@@ -6,13 +6,7 @@
 
 static int curObjectId = 0;
 
-template <class T>
-void setOrigin(T shape) {
-	sf::FloatRect Bounds = shape.getLocalBounds();
-	shape.setOrigin(Bounds.width / 2, Bounds.height / 2);
-}
-
-ResourceType randomResourceType() {
+ResourceType Object::randomResourceType() {
 	float randomNum = random::randomFloat(0, 100);
 	if (randomNum < 1)
 		return ResourceType::AlphaPentagon;
@@ -25,7 +19,8 @@ ResourceType randomResourceType() {
 
 Object::Object(float radius, const sf::Color& color, const point& position, int maxHealth)
 	: body(radius), maxHealth(maxHealth), currentHealth(maxHealth) {
-	// ½«ÅÚËþÔ­µãÉèÖÃÎªÆä¾Ö²¿±ß½çµÄÖÐÐÄ
+	helper::add(objects, this);
+	// å°†ç‚®å¡”åŽŸç‚¹è®¾ç½®ä¸ºå…¶å±€éƒ¨è¾¹ç•Œçš„ä¸­å¿ƒ
 	body.setOrigin(radius, radius);
 	body.setPosition(position);
 	body.setFillColor(color);
@@ -41,14 +36,12 @@ Object::Object(float radius, const sf::Color& color, const point& position, int 
 	healthText.setFillColor(sf::Color::White);
 	setOrigin(healthText);
 	healthText.setPosition(body.getPosition());
-	std::ostringstream ss;
-	ss << maxHealth;
-	healthText.setString(ss.str());
+	healthText.setString(std::to_string(maxHealth));
 	ID = curObjectId++;
 }
 
 Object::Object(ResourceType type, const point& position) {
-	// ½«ÅÚËþÔ­µãÉèÖÃÎªÆä¾Ö²¿±ß½çµÄÖÐÐÄ
+	helper::add(objects, this);
 	isPolygon = true;
 	switch (type)
 	{
@@ -115,25 +108,41 @@ Object::Object(ResourceType type, const point& position) {
 	healthText.setFillColor(sf::Color::White);
 	setOrigin(healthText);
 	healthText.setPosition(polygonBody.getPosition());
-	std::ostringstream ss;
-	ss << maxHealth;
-	healthText.setString(ss.str());
+	healthText.setString(std::to_string(maxHealth));
+	ID = curObjectId++;
+
+	isResource = true;
+	++Global::resourceCount;
+}
+
+Object::Object(const sf::Color& color, const point& position, int maxHealth) :maxHealth(maxHealth), currentHealth(maxHealth) {
+	helper::add(objects, this);
+	isPolygon = true;
+	polygonRadius = 10.5f;
+	polygonBody.setPointCount(3);
+	polygonBody.setPoint(0, point(10, -6));
+	polygonBody.setPoint(1, point(-10, -6));
+	polygonBody.setPoint(2, point(0, 12));
+	polygonBody.setFillColor(color);
+	polygonBody.setOutlineColor(sf::Color(85, 101, 109));
+	polygonBody.setPosition(position);
+	polygonBody.setOutlineThickness(3);
+	setOrigin(polygonBody);
+
+	healthText.setFont(Global::font);
+	healthText.setCharacterSize(20);
+	healthText.setFillColor(sf::Color::White);
+	setOrigin(healthText);
+	healthText.setPosition(polygonBody.getPosition());
+	healthText.setString(std::to_string(maxHealth));
 	ID = curObjectId++;
 }
 
 Object::~Object() {
-}
-
-void Object::setID(int id) {
-	ID = id;
-}
-
-void Object::setVelocity(const point& vel) {
-	Velocity = vel;
-}
-
-void Object::setAcceleration(const point& vel) {
-	Acceleration = vel;
+	//ä¸éœ€è¦åœ¨è¿™é‡Œåˆ é™¤,updateç»“æŸä¼šç»Ÿä¸€åˆ 
+	//helper::erase(objects, this);
+	if(isResource)
+		--Global::resourceCount;
 }
 
 void Object::setPosition(float x, float y) {
@@ -142,45 +151,27 @@ void Object::setPosition(float x, float y) {
 	healthText.setPosition(x, y);
 }
 
-bool Object::collideWith(Object& other, float extraDistance) {
-	point distanceVec = getPosition() - other.getPosition();
-	float distance = std::sqrt(distanceVec.x * distanceVec.x + distanceVec.y * distanceVec.y);
-	float minDistance = getRadius() + other.getRadius() + extraDistance;
-	return distance < minDistance;
+void Object::setRotation(float degress) {
+	polygonBody.setRotation(degress);
 }
 
-bool Object::collideWith(const Object& other) const {
-	double distance = std::sqrt(std::pow(getPosition().x - other.getPosition().x, 2) +
-		std::pow(getPosition().y - other.getPosition().y, 2));
-	return distance <= getRadius() + other.getRadius();
+bool Object::isCollideWith(const Object* other, float extraDistance) const {
+	float distance = getPosition().distance(other->getPosition());
+	return distance < getRadius() + other->getRadius() + extraDistance;
 }
 
 void Object::randomAddToMap() {
-	bool isValid; // ÊÇÓÐÐ§µÄ
+	bool isValid; // æ˜¯æœ‰æ•ˆçš„
 	do {
 		isValid = true;
 		float randomX = random::randomFloat(0, mapWidth);
 		float randomY = random::randomFloat(0, mapHeight);
 		setPosition(randomX, randomY);
-		// ¼ì²éÊÇ·ñÓëÍæ¼ÒÓÐÖØµþ£¬²¢±£³ÖÖÁÉÙÍæ¼Ò°ë¾¶ºÍÐÂ²úÉúµÐÈË°ë¾¶Ö®ºÍµÄ¾àÀë
-		float minDistance = player.getRadius() + getRadius();
-		if (collideWith(player, minDistance * 2.f)) {
-			isValid = false;
-		}
-
-		for (auto& other : resources) {
-			if (&other != this) {
-				minDistance = other.getRadius() + getRadius();
-				if (collideWith(other, minDistance * 2.f)) {
-					isValid = false;
-					break;
-				}
-			}
-		}
-		for (auto& other : enemies) {
-			if (&other != this) {
-				minDistance = other.getRadius() + getRadius();
-				if (collideWith(other, minDistance * 2.f)) {
+		for (auto other : objects) {
+			if (other != this) {
+				float minDistance = other->WhatAmI() == ObjectType::Object ? 0
+					: (other->getRadius() + getRadius()) * 2.f;
+				if (isCollideWith(other, minDistance)) {
 					isValid = false;
 					break;
 				}
@@ -190,59 +181,61 @@ void Object::randomAddToMap() {
 }
 
 void Object::reduceHealth(int amount) {
-	currentHealth -= amount;
+	currentHealth = std::max(0, currentHealth - amount);
 	std::ostringstream ss;
 	ss << currentHealth << "/" << maxHealth;
 	healthText.setString(ss.str());
-	if (currentHealth < 0) {
-		currentHealth = 0;
-	}
 }
 
-void Object::setMaxSpeed(float spd) {
-	MaxSpeed = spd;
-}
-
-void Object::setHealth(int health) {
-	currentHealth = health;
-}
-
-void Object::update() {
+void Object::updateMove() {
+	//é€Ÿåº¦æ›´æ–°
 	float delta = Global::deltaTime;
-
-	//ËÙ¶È¸üÐÂ
 	Velocity += Acceleration * delta;
-	float curInertia = pow(inertia, delta); // ¹ßÐÔ^delta
+	float curInertia = pow(inertia, delta); // æƒ¯æ€§^delta
 	if (!Acceleration.x)
 		Velocity.x *= curInertia;
 
 	if (!Acceleration.y)
 		Velocity.y *= curInertia;
 
-	// ½«ÅÚÌ¨ËÙ¶ÈÏÞÖÆÔÚ×î´óËÙ¶È·¶Î§ÄÚ
+	// å°†ç‚®å°é€Ÿåº¦é™åˆ¶åœ¨æœ€å¤§é€Ÿåº¦èŒƒå›´å†…
 	float currentSpeed = getSpeed();
-	if (currentSpeed > MaxSpeed) {
+	if (currentSpeed > MaxSpeed)
 		Velocity = (Velocity / currentSpeed) * MaxSpeed;
-	}
 
-	// ·ÀÖ¹ËÙ¶È¹ýÐ¡Ê±²úÉú¶¶¶¯
-	if (abs(Velocity.x) < 0.1) {
+	checkFirendlyCollide(Velocity);
+
+	// é˜²æ­¢é€Ÿåº¦è¿‡å°æ—¶äº§ç”ŸæŠ–åŠ¨
+	if (abs(Velocity.x) < 0.1)
 		Velocity.x = 0.0;
-	}
-	if (abs(Velocity.y) < 0.1) {
+	if (abs(Velocity.y) < 0.1)
 		Velocity.y = 0.0;
-	}
 
-	// ÒÆ¶¯ÅÚÌ¨
+	// ç§»åŠ¨ç‚®å°
 	move(Velocity.x * delta, Velocity.y * delta);
 }
-
-bool Object::isVivid() {
-	return !getHealth();
-}
-
-ObjectType Object::WhatAmI() {
-	return ObjectType::Object;
+void Object::update() {
+	if (!isDied &&!currentHealth) {
+		sf::Color color = body.getFillColor();
+		auto alpha = std::max(0, static_cast<int>(color.a - 1024 * Global::deltaTime));
+		color.a = alpha;
+		body.setFillColor(color);
+		color = body.getOutlineColor();
+		color.a = alpha;
+		body.setOutlineColor(color);
+		color = polygonBody.getFillColor();
+		color.a = alpha;
+		polygonBody.setFillColor(color);
+		color = polygonBody.getOutlineColor();
+		color.a = alpha;
+		polygonBody.setOutlineColor(color);
+		color = healthText.getFillColor();
+		color.a = alpha;
+		healthText.setFillColor(color);
+		if (alpha <= 0)
+			isDied = true;
+	}
+	updateMove();
 }
 
 void Object::move(float x, float y) {

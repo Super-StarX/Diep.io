@@ -136,6 +136,7 @@
     <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Bullet.h" />
     <ClCompile Include="diep.cpp" />
+    <ClCompile Include="Network.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Random.h" />

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Object.h"
 #include "Turret.h"
@@ -6,63 +6,65 @@
 class Player : public Object {
 public:
 	Player(float radius, const sf::Color& color, const point& position, int maxHealth);
+	Player(Player* owner);
+	~Player();
 
 	enum class TurretTypes
 	{
-		//---------0-5¼¶
+		//---------0-5çº§
 		Default,
 
-		//---------5-15¼¶
-		Twin,//×óÓÒË«·¢
-		Sniper,//Ò»·¢2±¶ÉËº¦µ«ÊÇrof/2
-		MachineGun,//¿ªÇ¹¸ü¿ì
-		FlankGuard,//Ç°ºó¿ª»ğ
+		//---------5-15çº§
+		Twin,//å·¦å³åŒå‘
+		Sniper,//ä¸€å‘2å€ä¼¤å®³ä½†æ˜¯rof/2
+		MachineGun,//å¼€æªæ›´å¿«
+		FlankGuard,//å‰åå¼€ç«
 
-		//---------15-40¼¶
+		//---------15-40çº§
 		//Double to
-		TripleShot,//É¢·¢3·¢
-		GuadTank,//4¸ö·½Ïò
+		TripleShot,//æ•£å‘3å‘
+		GuadTank,//4ä¸ªæ–¹å‘
 
 		//Sniper to
-		Assassin,//Ò»·¢4±¶ÉËº¦µ«ÊÇrof/2
-		Overseer,//Ä¸½¢
+		Assassin,//ä¸€å‘4å€ä¼¤å®³ä½†æ˜¯rof/2
+		Overseer,//æ¯èˆ°
 
 		//MachineGun to
-		Destoryer,//Ò»·¢¾Ş´óµÄÅÚµ¯,ÕâÅÚµ¯ÄÜ¶¥¸ü¶à·¢×Óµ¯
-		Gunner,//Ğ¡»úÇ¹
+		Destoryer,//ä¸€å‘å·¨å¤§çš„ç‚®å¼¹,è¿™ç‚®å¼¹èƒ½é¡¶æ›´å¤šå‘å­å¼¹
+		Gunner,//å°æœºæª
 
 		//FlankGuard to
-		TriAngle,//Æ¨¹É·½Ïò2·¢
-		Smasher,//´´ÈË
+		TriAngle,//å±è‚¡æ–¹å‘2å‘
+		Smasher,//åˆ›äºº
 
-		//ÖÕ¼«
-		Triplet,//Ò»´ÎÈı·¢
-		OctoTank,//8¸ö·½Ïò¿ª»ğ
+		//ç»ˆæ
+		Triplet,//ä¸€æ¬¡ä¸‰å‘
+		OctoTank,//8ä¸ªæ–¹å‘å¼€ç«
 
-		Stalker,//Ò»´Î6±¶ÉËº¦¼Ó³¬¼¶´©Í¸,ËÙ¶ÈºÜ¿ì
+		Stalker,//ä¸€æ¬¡6å€ä¼¤å®³åŠ è¶…çº§ç©¿é€,é€Ÿåº¦å¾ˆå¿«
 		Overlord,//
 
 		Annihilator,//
-		Streamliner,//ÉäËÙ³¬¿ì
+		Streamliner,//å°„é€Ÿè¶…å¿«
 
-		Booster,//ÒÆËÙ³¬¿ì
-		Landmine,//¾²Ö¹ÒşĞÎ
-		Spike//·´µ¯×Óµ¯
+		Booster,//ç§»é€Ÿè¶…å¿«
+		Landmine,//é™æ­¢éšå½¢
+		Spike//åå¼¹å­å¼¹
 	};
 
 	int getLevel() const { return level; }
+	TurretTypes getType() const { return Type; }
 	sf::Color getColor() const { return color; }
 	int getDamage() const { return bulletDamage; }
 	float getBulletSpeedMulti() const { return bulletSpeedMulti; }
 	float getBulletPenetration() const { return bulletPenetration; }
 	int getBulletDamage() const { return bulletDamage; }
 	float getAccuracy() const { return accuracy; }
+	float getBulletRadius();
 
 	void changeTurret(TurretTypes type);
 	void setTurretRotation(float degress);
 	void calcTurretRotation(const point& mousePos);
-	bool checkShot();
-	void resetShot();
 	void setPosition(float x, float y);
 	void reduceHealth(int amount);
 	void checkMove(float moveSpeed);
@@ -78,40 +80,39 @@ public:
 	void upgradeReloadInterval(float amount);
 	void upgradeMovementSpeed(float amount);
 
-	virtual void update();
-	virtual bool isAI();
-	virtual float getBulletRadius();
+	virtual void update() override;
+	virtual bool isAI() const { return false; }
 	virtual float getTurretRotation() const { return turretRotating; }
 
 protected:
-	virtual ObjectType WhatAmI();
-	virtual void move(float x, float y);
+	virtual ObjectType WhatAmI() const override { return ObjectType::Player; }
+	virtual void checkFirendlyCollide(point vel) override;
+	virtual void move(float x, float y) override;
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
 private:
+	TurretTypes Type{ TurretTypes::Default };
 	int level{ 1 };
 	int remainUpgradeSkills{ 0 };
 	int remainUpgradeType{ 0 };
 
-	//sf::RectangleShape turret;
 	sf::Color color;
-	sf::RectangleShape healthBar;
 	sf::Text nameText;
+	sf::RectangleShape healthBar;
 	std::vector<Turret> turrets;
+	std::vector<Player*> spawns;
+	Player* owner;
 	float turretRotating{ 0.f };
-	TurretTypes Type{ TurretTypes::Default };
 
-	float timeSinceLastShot{ 0.0f }; // ×ÔÉÏ´ÎÉä»÷ÒÔÀ´¾­¹ıµÄÊ±¼ä
+	float fireFrame{ 0.0f }; // è‡ªä¸Šæ¬¡å°„å‡»ä»¥æ¥ç»è¿‡çš„æ—¶é—´
 
 	float bulletSpeedMulti{ 1.0f };
 	float bulletPenetration{ 1.0f };
-	int bulletDamage{ 10 };
-	//int HealthRegen { 0 };
-	//int BodyDamage;
-	float reloadInterval{ 0.3f }; // Éä»÷¼ä¸ô£¬ÒÔÃëÎªµ¥Î»
-	//float movementSpeed;MaxSpeed
+	int bulletDamage{ 2 };
+	int HealthRegen { 0 };
+	float rof{ 0.3f }; // å°„å‡»é—´éš”ï¼Œä»¥ç§’ä¸ºå•ä½
 
 	//hide data
-	float accuracy{ 20.f };//²»¾«×¼¶È
-	float recoil{ 3.f };//ºó×øÁ¦
+	float accuracy{ 15.f };//ä¸ç²¾å‡†åº¦
+	float recoil{ 3.f };//åååŠ›
 };

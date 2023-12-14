@@ -1,19 +1,19 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Player.h"
 
-// Ë¼¿¼·¶Î§
 class AIPlayer : public Player {
 public:
 	AIPlayer(float radius, const sf::Color& color, const point& position, int maxHealth);
-
+	~AIPlayer();
 	void checkCollision();
 	float fastDistance(const point& a, const point& b);
-	float evaluateSafety(const point& position); // ÆÀ¹ÀÎ»ÖÃµÄ°²È«ĞÔµÃ·Ö
-	point computeNewPosition(float x, float y); // ¹æ±ÜÅö×²
+	float evaluateSafety(const point& position); // è¯„ä¼°ä½ç½®çš„å®‰å…¨æ€§å¾—åˆ†
+	point computeNewPosition(float x, float y); // è§„é¿ç¢°æ’
 	void think();
 
+	virtual void update() override;
 private:
-	virtual bool isAI();
-	virtual ObjectType WhatAmI();
+	virtual bool isAI() const override { return true; }
+	virtual ObjectType WhatAmI() const override { return ObjectType::AIPlayer; }
 };

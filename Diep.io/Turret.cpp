@@ -15,21 +15,13 @@ Turret::Turret(Player* owner, float sizeX, float sizeY, point offest, sf::Color 
 	shape.setOutlineColor(sf::Color{ 116,116,116 });
 }
 
-void Turret::setRotation(float dir) {
-	shape.setRotation(dir + offestDir);
-}
-
-void Turret::setPosition(float x, float y) {
-	shape.setPosition(x, y);
-}
-
 point Turret::fire(Player* owner, point target) const {
 	point orgin = offest;
 	orgin.y += shape.getSize().y / 2;
 	orgin.y *= -1;
 
 	float rad = math::rad(owner->getTurretRotation() + offestDir);
-	Bullet bullet(owner, shape.getPosition() + orgin.rotation(rad));
+	auto bullet = new Bullet(owner, shape.getPosition() + orgin.rotation(rad));
 
 	// 计算子弹发射角度
 	point firePos = owner->getPosition();
@@ -40,7 +32,7 @@ point Turret::fire(Player* owner, point target) const {
 	auto dir = direction.rotation(rad);
 
 	float length = dir.length();
-	bullet.setVelocity(dir / length * bullet.getBulletSpeed());
+	bullet->setVelocity(dir / length * bullet->getBulletSpeed());
 	bullets.emplace_back(bullet);
 	return dir / length;
 }

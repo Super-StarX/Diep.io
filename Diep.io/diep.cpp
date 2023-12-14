@@ -22,13 +22,15 @@ sf::Clock globalClock;
 NetworkManager networkManager;
 UI Global::ui;
 Menu menu;
+int Global::resourceCount;
 
 // 创建对象
-Player Global::currentPlayer(15.f, sf::Color{0,179,225}, point(400, 300), 1000);
-std::vector<Player> players;
-std::vector<Bullet> bullets;
-std::vector<Object> resources{ 250, Object(randomResourceType(),point(200, 200)) };
-std::vector<AIPlayer> enemies{ 50, AIPlayer(15.f, sf::Color::Red, point(200, 200), 100), };
+Player* player;
+std::vector<Player*> players;
+std::vector<Bullet*> bullets;
+std::vector<Object*> objects;
+std::vector<AIPlayer*> enemies;
+std::vector<sf::VertexArray> Global::lines;
 
 point getWindowToWorldPosition(const sf::View& view) {
 	// 获取鼠标在窗口中的位置（窗口坐标系）
@@ -119,17 +121,14 @@ void update() {
 			else if (event.type == sf::Event::GainedFocus)
 				hasFocus = true;
 			// 处理UI点击
-			if (event.type == sf::Event::MouseButtonPressed) {
-				if (event.mouseButton.button == sf::Mouse::Left) {
-					// 获取点击的世界坐标
-					sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
-
-					// 如果用户点击在屏幕左下角（按钮区域）
-					if (mousePosition.x <= 100 && mousePosition.y >= defaultWindowHeight - 370)
-					{
-						isClickButton = true;
-						Global::ui.handleMouseClick(event.mouseButton.x, event.mouseButton.y);
-					}
+			if (event.type == sf::Event::MouseButtonPressed
+				&& event.mouseButton.button == sf::Mouse::Left
+				&& player->upgradeCount()) {
+				sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+				if (mousePosition.x <= 100 && mousePosition.y >= defaultWindowHeight - 370)
+				{
+					isClickButton = true;
+					Global::ui.handleMouseClick(event.mouseButton.x, event.mouseButton.y);
 				}
 			}
 		}
@@ -140,76 +139,107 @@ void update() {
 		if (hasFocus && !isClickButton && !Global::isGameOver) {
 			// 更新炮塔方向
 			point mousePosition = getWindowToWorldPosition(view);
-			player.calcTurretRotation(mousePosition);
+			player->calcTurretRotation(mousePosition);
 
 			// 根据用户输入(wsad)移动炮台
-			player.checkMove(moveSpeed);
-
-			// 由于存在惯性,每帧更新炮台的位置
-			player.update();
-			player.checkCollision();
-			networkManager.sendPlayerPositionUpdate();
+			player->checkMove(moveSpeed);
 
 			// 如果按下鼠标左键,则进行开火
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-				if (player.fire(mousePosition))
+				if (player->fire(mousePosition))
 					networkManager.sendPlayerFireEvent(mousePosition);
 		}
 
-		for (auto& enemy : players) {
-			enemy.update();
-			enemy.checkCollision();
+		for (const auto& obj : objects)
+			obj->update();
+
+		// 网格遍历碰撞检测
+		std::map<std::pair<int, int>, std::vector<Object*>> grid;
+		for (auto& obj : objects) {
+			int x = static_cast<int>(obj->getPosition().x / 250);
+			int y = static_cast<int>(obj->getPosition().y / 250);
+			grid[std::make_pair(x, y)].push_back(obj);
 		}
 
-		// 资源的惯性
-		for (auto& resource : resources) {
-			resource.update();
+		for (auto& cell : grid) {
+			auto& objs = cell.second;
+			for (size_t i = 0; i < objs.size(); ++i) {
+				for (size_t j = i + 1; j < objs.size(); ++j) {
+					auto obj1 = objs[i], obj2 = objs[j];
+					sf::VertexArray line(sf::Lines, 2);
+					line[0].position = obj1->getPosition();
+					line[1].position = obj2->getPosition();
+					Global::lines.push_back(line);
+					
+					if (obj1->isCollideWith(obj2) && obj1 != obj2
+						&& obj1->getHealth() && obj2->getHealth()) {
+						if (obj1->WhatAmI() == ObjectType::Bullet && obj2->WhatAmI() == ObjectType::Bullet) { //子弹相撞
+							while (obj1->getTeam() != obj2->getTeam() && obj1->getHealth() > 0 && obj2->getHealth() > 0) { // 直到有一方扣完血
+								obj1->reduceHealth(static_cast<Bullet*>(obj2)->getMaxHealth());
+								obj2->reduceHealth(static_cast<Bullet*>(obj1)->getMaxHealth());
+							}
+						}
+						else if (obj1->WhatAmI() != ObjectType::Bullet && obj2->WhatAmI() != ObjectType::Bullet) { //物物相撞
+							if (obj1->getTeam() != obj2->getTeam()) {
+								obj1->reduceHealth(obj2->getBodyDamage());
+								obj2->reduceHealth(obj1->getBodyDamage());
+								if (!obj1->getHealth() || !obj2->getHealth()) {
+									auto winner = static_cast<Player*>(obj1->getHealth() ? obj1 : obj2);
+									winner->AddExp(obj2->getExp());
+									continue;
+								}
+							}
+							auto vel = math::momentum(obj1->getVelocity(), obj1->getMass(), obj2->getVelocity(), obj2->getMass());
+							obj2->setVelocity(-vel.first);
+							obj1->setVelocity(-vel.second);
+						}
+						else { // 弹物相撞
+							auto bullet = obj1->WhatAmI() == ObjectType::Bullet ? obj1 : obj2;
+							auto obj = obj1->WhatAmI() == ObjectType::Bullet ? obj2 : obj1;
+							if (obj1->getTeam() != obj2->getTeam()) {
+								int health = obj->getHealth();
+								obj->reduceHealth(bullet->getMaxHealth());
+								bullet->reduceHealth(obj->getHealth() ? bullet->getHealth() : health);
+								if (obj->getHealth() <= 0) {
+									if (auto pOwner = static_cast<Bullet*>(bullet)->getOwner())
+										pOwner->AddExp(obj->getExp());
+									auto vel = math::combined(obj1->getVelocity(), obj1->getMass(), obj2->getVelocity(), obj2->getMass());
+									bullet->setVelocity(vel);
+									continue;
+								}
+							}
+							auto vel = math::collision(bullet->getVelocity(), obj->getVelocity(), bullet->getPosition(), obj->getPosition(), bullet->getMass() / 2, obj->getMass());
+							bullet->setVelocity(vel.first);
+							obj->setVelocity(vel.second);
+						}
+					}
+				}
+			}
 		}
 
-		// 子弹的惯性、碰撞
-		for (auto& bullet : bullets) {
-			bullet.update();
-			bullet.checkCollision();
-		}
-
-		// AI的寻敌、惯性、碰撞
-		for (auto& enemy : enemies) {
-			enemy.think();
-			enemy.update();
-			enemy.checkCollision();
-			networkManager.sendAIStatus(enemy);
-		}
-
-		// 从内存中真正删除死去的资源
+		// 清理尸体
 		if (networkManager.isHost()) {
-			resources.erase(std::remove_if(resources.begin(), resources.end(),
-				[](Object& resource) {
-					return !resource.getHealth();
-				}), resources.end());
-
-			bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
-				[](Bullet& bullet) {
-					return bullet.isVivid();
-				}), bullets.end());
-
-			enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-				[](AIPlayer& enemy) {
-					return !enemy.getHealth();
-				}), enemies.end());
+			for (auto it = objects.begin(); it != objects.end(); ) {
+				if ((*it)->isDie()) {
+					delete* it;
+					it = objects.erase(it);
+				}
+				else
+					++it;
+			}
 		}
 
 		//生成新的资源
-		if (networkManager.isHost() && resources.size() < maxResourceCount) {
+		if (networkManager.isHost() && Global::resourceCount < maxResourceCount) {
 			// 累积自上次生成资源以来的时间
 			timeSinceLastSpawn += Global::deltaTime;
 
 			// 如果累积时间大于生成资源所需的时间，尝试在地图的随机位置生成新资源
 			if (timeSinceLastSpawn >= respawnTime) {
 				timeSinceLastSpawn = 0; // 重置时间
-				Object resource(randomResourceType(), point(200, 200));
-				resource.randomAddToMap();
-				resources.emplace_back(std::move(resource));
-				networkManager.sendPlayerResource(resource.getPosition());
+				auto resource = new Object(Object::randomResourceType(), point(200, 200));
+				resource->randomAddToMap();
+				networkManager.sendPlayerResource(resource->getPosition());
 			}
 		}
 	}
@@ -224,20 +254,16 @@ void render() {
 	}
 	else {
 		// 更新视图使其聚焦于圆
-		view.setCenter(player.getPosition());
+		view.setCenter(player->getPosition());
 		window.setView(view);
 		drawGrid(15);
 
-		// 绘制玩家和其他目标
-		window.draw(player);
-		for (const auto& other : resources)
-			window.draw(other);
-		for (const auto& bullet : bullets)
-			window.draw(bullet);
-		for (const auto& enemy : enemies)
-			window.draw(enemy);
-		for (const auto& otherPlayer : players)
-			window.draw(otherPlayer);
+		for (const auto& obj : objects)
+			window.draw(*obj);
+		
+		for (const auto& line : Global::lines)
+			window.draw(line);
+		Global::lines.clear();
 
 		// 在绘制UI之前，将视图重置为默认视图
 		window.setView(window.getDefaultView());
@@ -254,21 +280,22 @@ int main() {
 
 	window.clear(sf::Color(100, 100, 100));
 
+	player = new Player(15.f, blueTeamColor, point(400, 300), 1000);
 	// 添加资源
-	for (auto& resource : resources) {
-		resource.randomAddToMap();
+	for (int i = 0; i < 250; i++) {
+		auto resource = new Object(Object::randomResourceType(), point(200, 200));
+		resource->randomAddToMap();
 	}
 
 	// 创建其他敌人AI
-	for (auto& enemy : enemies) {
-		enemy.randomAddToMap();
-		enemy.setTurretRotation(random::randomFloat(0, 314));
+	for (int i = 0; i < 50; i++) {
+		auto enemy = new AIPlayer(15.f, redTeamColor, point(200, 200), 100);
+		enemy->randomAddToMap();
+		enemy->setTurretRotation(random::randomFloat(0, 314));
 	}
 
 	// 创建一个文本对象来显示圆的位置
-	sf::Font initfont;
-	initfont.loadFromFile("fonts/chinese.ttf");
-	Global::font = initfont;
+	Global::font.loadFromFile("fonts/chinese.ttf");
 
 	// 初始化小地图的 RenderTexture
 	Global::ui.initialiseMinimapTexture();

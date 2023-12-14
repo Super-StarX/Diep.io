@@ -1,29 +1,46 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include "Player.h"
 #include "Global.h"
 #include "Data.h"
+#include "Network.h"
 
 Player::Player(float radius, const sf::Color& color, const point& position, int maxHealth) :
 	Object(radius, color, position, maxHealth), color(color) {
-	changeTurret(TurretTypes::TriAngle);
+	changeTurret(TurretTypes::Default);
+	helper::add(players, this);
 	healthBar.setSize(point(radius * 2.0f, 4.0f));
 	healthBar.setFillColor(sf::Color::Red);
 	healthBar.setOrigin(healthBar.getSize().x / 2, 20);
 	healthBar.setPosition(getPosition().x, getPosition().y);
+	setTeam(color == blueTeamColor ? 1 : 2);
+}
+
+Player::Player(Player* owner) :
+	Object(owner->getColor(), owner->getPosition(), owner->getBulletDamage())
+	, owner(owner)
+	, color(owner->getColor()) {
+	helper::add(players, this);
+	setTeam(color == blueTeamColor ? 1 : 2);
+}
+
+Player::~Player() {
+	helper::erase(players, this);
+	turrets.clear();
+	if (owner)
+		helper::erase(owner->spawns, this);
 }
 
 void Player::AddExp(int amount) {
 	if (level > 45)
 		return;
+	int need = nextLevelExp[level];
 	int exp = getExp();
 	exp += amount;
 	setExp(exp);
-
-	int need = nextLevelExp[level];
-	if (exp >= need) {
-		int count = exp / 1000;
-		remainUpgradeSkills += 1;
-		level += 1;
+	if (exp >= need && need) {
+		int count = exp / need;
+		++remainUpgradeSkills;
+		++level;
 		exp -= need;
 		setExp(exp);
 		if (exp >= need)
@@ -35,67 +52,67 @@ int Player::upgradeCount() const {
 	return remainUpgradeSkills > 0;
 }
 
-bool Player::isAI() {
-	return false;
-}
-
 void Player::changeTurret(TurretTypes type) {
 	turrets.clear();
 	float radius = getRadius();//15.f
+	Type = type;
 	switch (type)
 	{
-	case Player::TurretTypes::Default:
+	case TurretTypes::Default:
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		break;
-		//³õ¼¶
-	case Player::TurretTypes::Twin:
+		//åˆçº§
+	case TurretTypes::Twin:
 		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.2f, point{ -10,20 }, color, 0, 1));
 		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.2f, point{ 10,20 }, color, 0, 1));
 		break;
-	case Player::TurretTypes::Sniper:
+	case TurretTypes::Sniper:
 		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 2.8f, point{ 0,40 }, color, 0, 1));
 		break;
-	case Player::TurretTypes::MachineGun:
+	case TurretTypes::MachineGun:
 		turrets.emplace_back(Turret(this, radius * 0.95f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		break;
-	case Player::TurretTypes::FlankGuard:
+	case TurretTypes::FlankGuard:
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, point{ 0,20 }, color, 180, 1));
 		break;
-		//ÖĞ¼¶
-	case Player::TurretTypes::TripleShot:
+		//ä¸­çº§
+	case TurretTypes::TripleShot:
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, -45, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 45, 1));
 		break;
-	case Player::TurretTypes::GuadTank:
+	case TurretTypes::GuadTank:
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 90, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 180, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 270, 1));
 		break;
-	case Player::TurretTypes::Assassin:
+	case TurretTypes::Assassin:
 		break;
-	case Player::TurretTypes::Overseer:
+	case TurretTypes::Overseer:
+		turrets.emplace_back(Turret(this, radius * 1.35f, radius * 1.5f, point{ 0,20 }, color, 90, 1));
+		turrets.emplace_back(Turret(this, radius * 1.35f, radius * 1.5f, point{ 0,20 }, color, 270, 1));
+		bulletDamage = 50;
 		break;
-	case Player::TurretTypes::Destoryer:
+	case TurretTypes::Destoryer:
 		break;
-	case Player::TurretTypes::Gunner:
+	case TurretTypes::Gunner:
 		break;
-	case Player::TurretTypes::TriAngle:
+	case TurretTypes::TriAngle:
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, point{ 0,20 }, color, -160, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 1.8f, point{ 0,20 }, color, 160, 1));
 		break;
-	case Player::TurretTypes::Smasher:
+	case TurretTypes::Smasher:
 		break;
-		//¸ß¼¶
-	case Player::TurretTypes::Triplet:
+		//é«˜çº§
+	case TurretTypes::Triplet:
 		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 1.8f, point{ -11,20 }, color, 0, 1));
 		turrets.emplace_back(Turret(this, radius * 0.65f, radius * 1.8f, point{ 11,20 }, color, 0, 1));
 		turrets.emplace_back(Turret(this, radius * 0.75f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		break;
-	case Player::TurretTypes::OctoTank:
+	case TurretTypes::OctoTank:
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 0, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 45, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, 90, 1));
@@ -105,19 +122,19 @@ void Player::changeTurret(TurretTypes type) {
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, -90, 1));
 		turrets.emplace_back(Turret(this, radius * 0.8f, radius * 2.2f, point{ 0,20 }, color, -135, 1));
 		break;
-	case Player::TurretTypes::Stalker:
+	case TurretTypes::Stalker:
 		break;
-	case Player::TurretTypes::Overlord:
+	case TurretTypes::Overlord:
 		break;
-	case Player::TurretTypes::Annihilator:
+	case TurretTypes::Annihilator:
 		break;
-	case Player::TurretTypes::Streamliner:
+	case TurretTypes::Streamliner:
 		break;
-	case Player::TurretTypes::Booster:
+	case TurretTypes::Booster:
 		break;
-	case Player::TurretTypes::Landmine:
+	case TurretTypes::Landmine:
 		break;
-	case Player::TurretTypes::Spike:
+	case TurretTypes::Spike:
 		break;
 	default:
 		break;
@@ -134,21 +151,12 @@ void Player::calcTurretRotation(const point& mousePos) {
 	point turretPos = getPosition();
 	point direction = mousePos - turretPos;
 
-	// ¼ÆËã¼Ğ½Ç»¡¶È
+	// è®¡ç®—å¤¹è§’å¼§åº¦
 	float radians = std::atan2(direction.y, direction.x);
 
-	// ×ª»»Îª¶ÈÊı²¢ÉèÖÃÅÚÌ¨Ğı×ª½Ç¶È
-	float degrees = radians * (180.0f / 3.14159265f) + 90.0f; // ×¢Òâ +90 ±íÊ¾³¯×ÅÊó±ê
+	// è½¬æ¢ä¸ºåº¦æ•°å¹¶è®¾ç½®ç‚®å°æ—‹è½¬è§’åº¦
+	float degrees = radians * (180.0f / 3.14159265f) + 90.0f; // æ³¨æ„ +90 è¡¨ç¤ºæœç€é¼ æ ‡
 	setTurretRotation(degrees);
-}
-
-bool Player::checkShot() {
-	// ¼ì²éÊÇ·ñÂú×ãÉä»÷Ìõ¼ş
-	return timeSinceLastShot > reloadInterval;
-}
-
-void Player::resetShot() {
-	timeSinceLastShot = 0.0;
 }
 
 void Player::setPosition(float x, float y) {
@@ -162,13 +170,13 @@ void Player::setPosition(float x, float y) {
 void Player::reduceHealth(int amount) {
 	Object::reduceHealth(amount);
 
-	// ÖØĞÂ¼ÆËãÑªÌõ
+	// é‡æ–°è®¡ç®—è¡€æ¡
 	int currentHealth = getHealth();
-	float percentage = static_cast<float>(currentHealth) / getmaxHealth();
+	float percentage = static_cast<float>(currentHealth) / getMaxHealth();
 	healthBar.setSize(point(healthBar.getSize().x * percentage, healthBar.getSize().y));
 
-	// ¼ì²âÊÇ·ñÓÎÏ·½áÊø
-	if (!currentHealth && &Global::currentPlayer == this) {
+	// æ£€æµ‹æ˜¯å¦æ¸¸æˆç»“æŸ
+	if (!currentHealth && Global::currentPlayer == this) {
 		Global::isGameOver = true;
 	}
 }
@@ -176,49 +184,43 @@ void Player::reduceHealth(int amount) {
 void Player::checkMove(float moveSpeed) {
 	bool noXAcceleration = true;
 	bool noYAcceleration = true;
-	auto Acceleration = getAcceleration();
+	float MaxAcceleration = getMaxAcceleration();
+	point Acceleration;
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-		if (Acceleration.x > 0)
-			Acceleration.x = 0.0f;
-		Acceleration.x = -400.0f;
+		Acceleration.x = -MaxAcceleration;
 		noXAcceleration = false;
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-		if (Acceleration.x < 0)
-			Acceleration.x = 0.0f;
-		Acceleration.x = 400.0f;
+		Acceleration.x = MaxAcceleration;
 		noXAcceleration = false;
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-		if (Acceleration.y > 0)
-			Acceleration.y = 0.0f;
-		Acceleration.y = -400.0f;
+		Acceleration.y = -MaxAcceleration;
 		noYAcceleration = false;
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-		if (Acceleration.y < 0)
-			Acceleration.y = 0.0f;
-		Acceleration.y = 400.0f;
+		Acceleration.y = MaxAcceleration;
 		noYAcceleration = false;
 	}
-	if (noXAcceleration) {
+	if (Acceleration.x && Acceleration.y)
+		Acceleration = Acceleration.normalization() * MaxAcceleration;
+	if (noXAcceleration)
 		Acceleration.x = 0.0f;
-	}
-	if (noYAcceleration) {
+	if (noYAcceleration)
 		Acceleration.y = 0.0f;
-	}
 	setAcceleration(Acceleration);
 }
 
 void Player::checkCollision() {
-	// ¼ì²éÓë×ÊÔ´µÄÅö×²
-	for (auto& resource : resources) {
-		if (collideWith(resource)) {
+	// æ£€æŸ¥ä¸èµ„æºçš„ç¢°æ’
+	for (auto resource : objects) {
+		if(resource->getTeam()!=getTeam()&&resource!=this)
+		if (isCollideWith(resource)) {
 			int health = getHealth();
-			reduceHealth(resource.getHealth());
-			resource.reduceHealth(health);
-			if (resource.getHealth() <= 0)
-				AddExp(resource.getExp());
+			reduceHealth(resource->getHealth());
+			resource->reduceHealth(health);
+			if (resource->getHealth() <= 0)
+				AddExp(resource->getExp());
 		}
 	}
 }
@@ -239,24 +241,84 @@ float Player::getBulletRadius(){
 }
 
 bool Player::fire(point target) {
-	if (checkShot()) {
+	if (Type == TurretTypes::Overseer) {
+		for (auto spawn : spawns) {
+			point direction = target - spawn->getPosition();
+			point acc = direction.normalization() * getMaxAcceleration();
+			spawn->setAcceleration(acc);
+		}
+	}
+	else if (fireFrame > rof) {
 		for (auto& turret : turrets) {
 			auto backVel = recoil * turret.fire(this, target);
 			setVelocity(getVelocity() - backVel);
 		}
-		resetShot();
+		fireFrame = 0.f;
 		return true;
 	}
 	return false;
 }
 
-void Player::update() {
-	Object::update();
-	//rof¸üĞÂ
-	timeSinceLastShot += Global::deltaTime;
+void Player::checkFirendlyCollide(point vel) {
+	// ç¢°æ’æ£€æµ‹å’Œå¤„ç†
+	if (owner && vel.x && vel.y) {
+		Player* pClosest = nullptr;
+		float minDis = std::numeric_limits<float>::max();
+
+		for (auto& other : owner->spawns) {
+			if (other != this) {
+				float distance = this->getPosition().distance(other->getPosition());//getDistance(*this, other); // è·å–ä¸¤ä¸ªç‚®å°ä¹‹é—´çš„è·ç¦»
+				if (distance < this->getRadius() * 2) { // å‘ç”Ÿç¢°æ’
+					if (distance < minDis) {
+						pClosest = other;
+						minDis = distance;
+					}
+				}
+			}
+		}
+
+		if (pClosest != nullptr) {
+			float moveDistance = this->getRadius() * 2 - minDis;
+
+			// æ ¹æ®è¾¹ç¼˜ä½ç½®æ–¹å‘è°ƒæ•´é€Ÿåº¦ï¼Œä½¿å¾—ç‚®å°åœåœ¨ç¢°æ’çƒçš„è¾¹ç¼˜
+			vel += (getPosition() - pClosest->getPosition()) * moveDistance;
+		}
+	}
 }
 
-
+void Player::update() {
+	Object::update();
+	float delta= Global::deltaTime;
+	if (!getHealth()) {
+		for (auto& turret : turrets) {
+			auto& body = turret.getShape();
+			sf::Color color = body.getFillColor();
+			auto alpha = std::max(0, static_cast<int>(color.a - 1024 * Global::deltaTime));
+			color.a = alpha;
+			body.setFillColor(color);
+			color = body.getOutlineColor();
+			color.a = alpha;
+			body.setOutlineColor(color);
+		}
+	}
+	if (owner) {
+		auto& vel = getAcceleration();
+		float rad = atan2(vel.y, vel.x);
+		setRotation(math::angle(rad) + 30);
+		setAcceleration(point(0, 0));
+	}
+	if (Type == TurretTypes::Overseer) {
+		if (spawns.size() < 8 && fireFrame > rof) {
+			auto spawn = new Player(this);
+			spawns.push_back(spawn);
+			fireFrame = 0.f;
+		}
+	}
+	//rofæ›´æ–°
+	fireFrame += delta;
+	if (this == player)
+		networkManager.sendPlayerPositionUpdate();
+}
 
 void Player::upgradeBulletSpeed(float amount) {
 	if (!remainUpgradeSkills)
@@ -285,7 +347,7 @@ void Player::upgradeBulletDamage(int amount) {
 void Player::upgradeReloadInterval(float amount) {
 	if (!remainUpgradeSkills)
 		return;
-	reloadInterval -= amount;
+	rof -= amount;
 	remainUpgradeSkills--;
 	std::cout << "Upgrade Reload Interval" << std::endl;
 }
@@ -296,10 +358,6 @@ void Player::upgradeMovementSpeed(float amount) {
 	setMaxSpeed(getMaxSpeed() + amount);
 	remainUpgradeSkills--;
 	std::cout << "Upgrade Movement Speed" << std::endl;
-}
-
-ObjectType Player::WhatAmI() {
-	return ObjectType::Player;
 }
 
 void Player::move(float x, float y) {
@@ -314,6 +372,8 @@ void Player::move(float x, float y) {
 void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const {
 	for (auto& turret : turrets)
 		turret.draw(target, states);
+	for (auto spawn : spawns)
+		spawn->draw(target, states);
 	Object::draw(target, states);
 	target.draw(healthBar, states);
 }

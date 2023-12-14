@@ -9,8 +9,10 @@ public:
 	Turret(Player* owner, float sizeX, float sizeY, point offest, sf::Color color, float offestDir, float scale);
 	~Turret() = default;
 
-	void setRotation(float dir);
-	void setPosition(float x, float y);
+	sf::RectangleShape& getShape() { return shape; };
+	void setRotation(float dir) { shape.setRotation(dir + offestDir); }
+	void setPosition(float x, float y) { shape.setPosition(x, y); }
+
 	point fire(Player* owner, point target) const;
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 

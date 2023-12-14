@@ -1,4 +1,4 @@
-#include "Bullet.h"
+ï»¿#include "Bullet.h"
 #include "AIPlayer.h"
 #include "Data.h"
 #include "Global.h"
@@ -7,8 +7,8 @@ Bullet::Bullet(Player* owner, point pos)
 	: owner(owner),
 	bulletSpeedMulti(owner->getBulletSpeedMulti()),
 	bulletPenetration(owner->getBulletPenetration()),
-	bulletDamage(owner->getBulletDamage()),
 	Object(owner->getBulletRadius(), owner->getColor(), pos, owner->getBulletDamage()) {
+	setTeam(owner->getTeam());
 }
 
 bool Bullet::sameOwner(const Bullet* target) const {
@@ -28,63 +28,11 @@ bool Bullet::isVivid() const {
 }
 
 void Bullet::reduceHealth(int amount) {
-	int health = getHealth() - amount;
-	if (health > 0) {
-		setHealth(health);
-		bulletPenetration -= 1;
-	}
-	else {
-		setHealth(0);
-		bulletPenetration = 0;
-	}
-}
-
-void Bullet::checkCollision() {
-	// ¼ì²éÓëÆäËû×Óµ¯µÄÅö×²
-	for (auto& bullet : bullets) {
-		if (&bullet != this) {
-			if (!sameOwner(&bullet) && collideWith(bullet)) {
-				int damage = bullet.getDamage();
-				bullet.reduceHealth(getDamage());
-				reduceHealth(damage);
-			}
-		}
-	}
-
-	// ¼ì²éÓëÍæ¼ÒµÄÅö×²
-	if (!isMyOwner(&player) && collideWith(player)) {
-		int health = player.getHealth();
-		player.reduceHealth(getDamage());
-		reduceHealth(health);
-	}
-
-	// ¼ì²éÓë×ÊÔ´µÄÅö×²
-	for (auto& resource : resources) {
-		if (collideWith(resource)) {
-			int health = resource.getHealth();
-			resource.reduceHealth(getDamage());
-			reduceHealth(health);
-
-			if (resource.getHealth() <= 0)
-				getOwner()->AddExp(500);
-			else {
-				// Îª×ÊÔ´Ìí¼Óºó×øÁ¦
-				auto newVelocity = resource.getVelocity() + 0.2f * getVelocity();
-				resource.setVelocity(newVelocity);
-			}
-		}
-	}
-
-	// ¼ì²éÓëµĞÈËµÄÅö×²
-	for (auto& enemy : enemies) {
-		if (!isMyOwner(&enemy) && collideWith(enemy)) {
-			int health = enemy.getHealth();
-			enemy.reduceHealth(getDamage());
-			reduceHealth(health);
-			if (enemy.getHealth() <= 0)
-				getOwner()->AddExp(2000);
-		}
-	}
+	/*if (bulletPenetration && getHealth() - amount < 0) {
+		amount = 0;
+		--bulletPenetration;
+	}*/
+	Object::reduceHealth(amount);
 }
 
 float Bullet::evaluateDistance() const {
@@ -103,17 +51,14 @@ point Bullet::evaluatePosition() {
 	return getPosition() + vel * delta * bulletSpeedMulti;
 }
 
-void Bullet::update() {
-	if (++life > bulletLife)
-		reduceHealth(getHealth());
-
+void Bullet::updateMove() {
 	float delta = Global::deltaTime;
 
-	// ËÙ¶È¸üĞÂ
+	// é€Ÿåº¦æ›´æ–°
 	point vel = getVelocity();
 	vel += getAcceleration() * delta;
 
-	// ÒÆ¶¯×Óµ¯
+	// ç§»åŠ¨å­å¼¹
 	move(vel.x * delta * bulletSpeedMulti, vel.y * delta * bulletSpeedMulti);
 
 	float currentSpeed = vel.length();
@@ -124,8 +69,10 @@ void Bullet::update() {
 	setVelocity(vel);
 }
 
-ObjectType Bullet::WhatAmI() {
-	return ObjectType::Bullet;
+void Bullet::update() {
+	if (++life > bulletLife)
+		reduceHealth(getHealth());
+	Object::update();
 }
 
 void Bullet::move(float x, float y) {
