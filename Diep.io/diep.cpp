@@ -1,4 +1,4 @@
-﻿#include <SFML/Graphics.hpp>
+#include <SFML/Graphics.hpp>
 
 #include "Object.h"
 #include "AIPlayer.h"
@@ -75,7 +75,7 @@ void drawGrid(int cellSize) {
 void update() {
 	networkManager.update();
 	//networkManager.sendGameData(/* 要发送的游戏数据 */);
-	bool hasFocus = true;
+	static bool hasFocus = true;
 	bool isClickButton = false;
 	sf::Event event;
 
