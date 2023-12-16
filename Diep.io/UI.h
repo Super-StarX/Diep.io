@@ -93,9 +93,12 @@ public:
 
 	void initialiseMinimapTexture();
 	point getPositionOnMinimap(point position);
+	void drawGrid();
 	void drawMinimap();
 	void drawGameOver();
 	void draw();
+
+	static void resize(sf::Event& event);
 
 private:
 	sf::Text playerPosText;

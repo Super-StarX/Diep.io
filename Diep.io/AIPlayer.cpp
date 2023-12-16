@@ -33,39 +33,14 @@ float AIPlayer::evaluateSafety(const point& position) {
     // 初始化得分
     float score = 0.0f;
 
-    // 检查是否靠近子弹，并根据距离降低得分
-    for (auto bullet : bullets) {
-        float distance = fastDistance(position, bullet->evaluatePosition());
-        if (distance < AIThinkRange) {
-            score -= (AIThinkRange - distance);
-        }
-    }
-
-    // 定义最小安全距离
-
-    // 检查是否靠近玩家，并根据距离降低得分
-    {
-        float distance = fastDistance(position, player->getPosition());
-        if (distance < min_safe_distance) {
-            score -= (min_safe_distance - distance) * 10;
-        }
-    }
-
-    // 检查是否靠近其他敌人，并根据距离降低得分
-    for (auto enemy : enemies) {
-        if (enemy != this) {
-            float distance = fastDistance(position, enemy->getPosition());
-            if (distance < min_safe_distance) {
-                score -= (min_safe_distance - distance) * 15;
-            }
-        }
-    }
-
     // 检查是否靠近资源对象，并根据距离降低得分
-    for (auto resource : objects) {
-        float distance = fastDistance(position, resource->getPosition());
-        if (distance < min_safe_distance) {
-            score -= (min_safe_distance - distance) * 10;
+    for (auto obj : objects) {
+        if (obj->getTeam() != getTeam()) {
+            point pos = obj->WhatAmI() == ObjectType::Bullet ? static_cast<Bullet*>(obj)->evaluatePosition() : obj->getPosition();
+            float distance = fastDistance(position, pos);
+            if (distance < min_safe_distance) {
+                score -= (min_safe_distance - distance) * 10;
+            }
         }
     }
 

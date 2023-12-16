@@ -14,6 +14,5 @@ public:
 
 	virtual void update() override;
 private:
-	virtual bool isAI() const override { return true; }
 	virtual ObjectType WhatAmI() const override { return ObjectType::AIPlayer; }
 };

@@ -4,6 +4,7 @@
 class Bullet : public Object {
 public:
 	Bullet(Player* owner, point pos);
+	~Bullet();
 
 	float getBulletSpeed() const { return bulletDefaultSpeed; }
 	Player* getOwner() const { return owner; }
@@ -13,11 +14,11 @@ public:
 	bool isAI() const;
 	bool isVivid() const;
 	float evaluateDistance() const;
-	point evaluatePosition();
 
 	virtual void reduceHealth(int amount) override;
 	virtual void updateMove() override;
 	virtual void update() override;
+	virtual point evaluatePosition() override;
 
 protected:
 	virtual ObjectType WhatAmI() const override { return ObjectType::Bullet; }

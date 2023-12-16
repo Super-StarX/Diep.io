@@ -7,12 +7,18 @@
 Player::Player(float radius, const sf::Color& color, const point& position, int maxHealth) :
 	Object(radius, color, position, maxHealth), color(color) {
 	changeTurret(TurretTypes::Default);
-	helper::add(players, this);
-	healthBar.setSize(point(radius * 2.0f, 4.0f));
-	healthBar.setFillColor(sf::Color::Red);
-	healthBar.setOrigin(healthBar.getSize().x / 2, 20);
-	healthBar.setPosition(getPosition().x, getPosition().y);
 	setTeam(color == blueTeamColor ? 1 : 2);
+	helper::add(players, this);
+	healthBorder.setSize(point(radius * 2 + 2, 5));
+	healthBorder.setFillColor(sf::Color{80,80,80});
+	healthBorder.setPosition(getPosition());
+	healthBar.setSize(point(radius * 2, 3));
+	healthBar.setFillColor(sf::Color::Red);
+	healthBar.setPosition(getPosition());
+	levelText.setFont(Global::font);
+	levelText.setFillColor(sf::Color::White);
+	levelText.setPosition(getPosition());
+	setLevel(1);
 }
 
 Player::Player(Player* owner) :
@@ -31,7 +37,7 @@ Player::~Player() {
 }
 
 void Player::AddExp(int amount) {
-	if (level > 45)
+	if (level > 45 || level < 1)
 		return;
 	int need = nextLevelExp[level];
 	int exp = getExp();
@@ -40,7 +46,7 @@ void Player::AddExp(int amount) {
 	if (exp >= need && need) {
 		int count = exp / need;
 		++remainUpgradeSkills;
-		++level;
+		setLevel(level + 1);
 		exp -= need;
 		setExp(exp);
 		if (exp >= need)
@@ -48,8 +54,28 @@ void Player::AddExp(int amount) {
 	}
 }
 
-int Player::upgradeCount() const {
-	return remainUpgradeSkills > 0;
+void Player::setLevel(int amount) {
+	level = amount;
+	/*坦克的大小變大、子彈的大小會增加。
+	你的視野將會增加。
+	你的移動速度將會降低。*/
+	//1级15 45级约25
+	float radius = 0.22f * amount + 14.78f;
+	setRadius(radius);
+	changeTurret(Type);
+	setOrigin(body);
+	setOrigin(polygonBody);
+	setOrigin(healthBorder, point(0, radius * 1.3f));
+	setOrigin(healthBar, point(0, radius * 1.3f));
+	setOrigin(healthText, point(0, radius * 1.85f));
+	healthBar.setPosition(healthBar.getPosition().x - ((healthBorder.getSize().x - 2) - healthBar.getSize().x) / 2, healthBar.getPosition().y);
+	levelText.setCharacterSize(static_cast<int>(radius));
+	levelText.setString("Level:" + std::to_string(amount));
+	setOrigin(levelText, point(0, -radius * 1.85f));
+}
+
+bool Player::upgradeCount() const {
+	return remainUpgradeSkills > 0 || Global::debugMode;
 }
 
 void Player::changeTurret(TurretTypes type) {
@@ -139,6 +165,8 @@ void Player::changeTurret(TurretTypes type) {
 	default:
 		break;
 	}
+	for (auto& turret : turrets)
+		turret.setRotation(turretRotating);
 }
 
 void Player::setTurretRotation(float degress) {
@@ -164,7 +192,9 @@ void Player::setPosition(float x, float y) {
 
 	for (auto& turret : turrets)
 		turret.setPosition(x, y);
-	healthBar.setPosition(x, y);
+	levelText.setPosition(x, y);
+	healthBorder.setPosition(x, y);
+	healthBar.setPosition(x - ((healthBorder.getSize().x - 2) - healthBar.getSize().x) / 2, y);
 }
 
 void Player::reduceHealth(int amount) {
@@ -173,14 +203,11 @@ void Player::reduceHealth(int amount) {
 	// 重新计算血条
 	int currentHealth = getHealth();
 	float percentage = static_cast<float>(currentHealth) / getMaxHealth();
-	healthBar.setSize(point(healthBar.getSize().x * percentage, healthBar.getSize().y));
-
-	// 检测是否游戏结束
-	if (!currentHealth && Global::currentPlayer == this) {
-		Global::isGameOver = true;
-	}
+	healthBar.setSize(point((healthBorder.getSize().x - 2) * percentage, healthBar.getSize().y));
+	healthBar.setPosition(healthBar.getPosition().x - ((healthBorder.getSize().x - 2) - healthBar.getSize().x) / 2, healthBar.getPosition().y);
 }
 
+// 根据用户输入(wsad)移动炮台
 void Player::checkMove(float moveSpeed) {
 	bool noXAcceleration = true;
 	bool noYAcceleration = true;
@@ -321,52 +348,32 @@ void Player::update() {
 }
 
 void Player::upgradeBulletSpeed(float amount) {
-	if (!remainUpgradeSkills)
-		return;
 	bulletSpeedMulti += amount;
 	remainUpgradeSkills--;
-	std::cout << "Upgrade Bullet Speed" << std::endl;
 }
 
 void Player::upgradeBulletPenetration(float amount) {
-	if (!remainUpgradeSkills)
-		return;
 	bulletPenetration += amount;
 	remainUpgradeSkills--;
-	std::cout << "Upgrade Bullet Penetration" << std::endl;
 }
 
 void Player::upgradeBulletDamage(int amount) {
-	if (!remainUpgradeSkills)
-		return;
 	bulletDamage += amount;
 	remainUpgradeSkills--;
-	std::cout << "Upgrade Bullet Damage" << std::endl;
 }
 
 void Player::upgradeReloadInterval(float amount) {
-	if (!remainUpgradeSkills)
-		return;
 	rof -= amount;
 	remainUpgradeSkills--;
-	std::cout << "Upgrade Reload Interval" << std::endl;
 }
 
 void Player::upgradeMovementSpeed(float amount) {
-	if (!remainUpgradeSkills)
-		return;
 	setMaxSpeed(getMaxSpeed() + amount);
 	remainUpgradeSkills--;
-	std::cout << "Upgrade Movement Speed" << std::endl;
 }
 
 void Player::move(float x, float y) {
 	Object::move(x, y);
-
-	auto pos = getPosition();
-	for (auto& turret : turrets)
-		turret.setPosition(pos.x, pos.y);
-	healthBar.setPosition(pos.x, pos.y);
 }
 
 void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const {
@@ -375,5 +382,7 @@ void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const {
 	for (auto spawn : spawns)
 		spawn->draw(target, states);
 	Object::draw(target, states);
+	target.draw(healthBorder, states);
 	target.draw(healthBar, states);
+	target.draw(levelText, states);
 }

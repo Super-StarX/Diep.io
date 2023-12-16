@@ -8,10 +8,10 @@ Turret::Turret(Player* owner, float sizeX, float sizeY, point offest, sf::Color 
 	offestDir(offestDir), offest(offest) {
 	shape.setSize(point(sizeX, sizeY));
 	shape.setFillColor(sf::Color{ 158,158,158 });
-	shape.setOrigin(sizeX / 2 + offest.x, sizeY / 2 + offest.y);
+	setOrigin(shape, offest);
 	shape.setPosition(owner->getPosition());
 	shape.setRotation(offestDir);
-	shape.setOutlineThickness(owner->getRadius() / 5);
+	shape.setOutlineThickness(3);
 	shape.setOutlineColor(sf::Color{ 116,116,116 });
 }
 

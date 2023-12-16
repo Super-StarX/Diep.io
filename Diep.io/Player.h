@@ -65,14 +65,13 @@ public:
 	void changeTurret(TurretTypes type);
 	void setTurretRotation(float degress);
 	void calcTurretRotation(const point& mousePos);
-	void setPosition(float x, float y);
 	void reduceHealth(int amount);
 	void checkMove(float moveSpeed);
 	void checkCollision();
 	bool fire(point target);
 
-	void AddExp(int amount);
-	int upgradeCount() const;
+	void setLevel(int amount);
+	bool upgradeCount() const;
 	void upgradeBulletSpeed(float amount);
 	void upgradeBulletPenetration(float amount);
 	void upgradeBulletDamage(int amount);
@@ -81,11 +80,12 @@ public:
 	void upgradeMovementSpeed(float amount);
 
 	virtual void update() override;
-	virtual bool isAI() const { return false; }
-	virtual float getTurretRotation() const { return turretRotating; }
+	virtual void setPosition(float x, float y) override;
+	virtual float getTurretRotation() const override { return turretRotating; }
+	virtual void AddExp(int amount) override;
+	virtual ObjectType WhatAmI() const override { return ObjectType::Player; }
 
 protected:
-	virtual ObjectType WhatAmI() const override { return ObjectType::Player; }
 	virtual void checkFirendlyCollide(point vel) override;
 	virtual void move(float x, float y) override;
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
@@ -97,8 +97,9 @@ private:
 	int remainUpgradeType{ 0 };
 
 	sf::Color color;
-	sf::Text nameText;
+	sf::Text levelText;
 	sf::RectangleShape healthBar;
+	sf::RectangleShape healthBorder;
 	std::vector<Turret> turrets;
 	std::vector<Player*> spawns;
 	Player* owner;

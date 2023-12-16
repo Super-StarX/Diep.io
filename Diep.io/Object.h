@@ -1,23 +1,23 @@
-#pragma once
+ï»¿#pragma once
 #include <SFML/Graphics.hpp>
 #include <sstream>
 #include "Data.h"
 
 /*
 Object
-Resource ÓĞÅö×² ¼õÑª ¹ßĞÔÒÆ¶¯
-Player ÓĞÅö×² ¼õÑª ¹ßĞÔÒÆ¶¯ ÅÚËş
-AIPlayer ÓĞÅö×² ¼õÑª ¹ßĞÔÒÆ¶¯ ÅÚËş Ë¼¿¼
-Bullet ¼ì²âËùÓĞresourceºÍplayerµÄÅö×²
+Resource æœ‰ç¢°æ’ å‡è¡€ æƒ¯æ€§ç§»åŠ¨
+Player æœ‰ç¢°æ’ å‡è¡€ æƒ¯æ€§ç§»åŠ¨ ç‚®å¡”
+AIPlayer æœ‰ç¢°æ’ å‡è¡€ æƒ¯æ€§ç§»åŠ¨ ç‚®å¡” æ€è€ƒ
+Bullet æ£€æµ‹æ‰€æœ‰resourceå’Œplayerçš„ç¢°æ’
 */
 
 class Object : public sf::Drawable {
 public:
-	//´´½¨µ¥Î»
+	//åˆ›å»ºå•ä½
 	Object(float radius, const sf::Color& color, const point& position, int maxHealth);
-	//´´½¨×ÊÔ´
+	//åˆ›å»ºèµ„æº
 	Object(ResourceType type, const point& position);
-	//´´½¨×Ó»ú
+	//åˆ›å»ºå­æœº
 	Object(const sf::Color& color, const point& position, int maxHealth);
 	~Object();
 
@@ -39,37 +39,40 @@ public:
 	bool isDie() const { return isDied; }
 
 	void setID(int id) { ID = id; }
+	void setRadius(float radius) { body.setRadius(radius); }
 	void setMaxSpeed(float spd) { MaxSpeed = spd; }
 	void setVelocity(const point& vel) { Velocity = vel; }
 	void setAcceleration(const point& vel) { Acceleration = vel; }
-	void setPosition(float x, float y);
 	void setRotation(float degress);
 	void setHealth(int health) { currentHealth = health; }
 	void setExp(int amount) { exp = amount; }
 	void setTeam(int idx) { team = idx; }
 	bool isCollideWith(const Object* other, float extraDistance = 0.f) const;
+	void collision(Object* other);
 	void randomAddToMap();
 
 	virtual void updateMove();
 	virtual void update();
+	virtual void setPosition(float x, float y);
 	virtual void reduceHealth(int amount);
 	virtual ObjectType WhatAmI() const { return ObjectType::Object; }
 	virtual float getTurretRotation() const { return 0; }
+	virtual void AddExp(int amount) { return; }
+	virtual point evaluatePosition() { return getPosition(); }
 
 	static ResourceType randomResourceType();
 protected:
-	virtual void checkFirendlyCollide(point vel) { return; };
+	virtual void checkFirendlyCollide(point vel) { return; }
 	virtual void move(float x, float y);
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
-private:
-
+	sf::Text healthText;
 	sf::CircleShape body;
 	sf::ConvexShape polygonBody;
-	sf::Text healthText;
+private:
 
 	int ID{ 0 };
-	int team{ 0 };//×ÊÔ´ÊÇ0=ÖĞÁ¢,À¶1ºì2
+	int team{ 0 };//èµ„æºæ˜¯0=ä¸­ç«‹,è“1çº¢2
 	int exp{ 0 };
 	int maxHealth{ 0 };
 	int currentHealth{ 0 };

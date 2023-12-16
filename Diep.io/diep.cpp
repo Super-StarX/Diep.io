@@ -1,9 +1,7 @@
 #include <SFML/Graphics.hpp>
 
-#include "Object.h"
 #include "AIPlayer.h"
 #include "Bullet.h"
-#include "Global.h"
 #include "Random.h"
 #include "UI.h"
 #include "Menu.h"
@@ -16,13 +14,15 @@ float timeSinceLastSpawn = 0.0f; // 保存上次生成资源的时间
 
 // 创建一个视图并将其设置为窗口大小
 sf::RenderWindow window(sf::VideoMode(defaultWindowWidth, defaultWindowHeight), "diep.io!");
-sf::View view(sf::FloatRect(0.f, 0.f, static_cast<float>(defaultWindowWidth), static_cast<float>(defaultWindowHeight)));
+sf::View viewer(sf::FloatRect(0.f, 0.f, static_cast<float>(defaultWindowWidth), static_cast<float>(defaultWindowHeight)));
 sf::Font Global::font;
 sf::Clock globalClock;
 NetworkManager networkManager;
 UI Global::ui;
 Menu menu;
-int Global::resourceCount;
+int Global::resourceCount = 0;
+bool Global::debugMode = false;
+Object* Global::whoKilledMe = nullptr;
 
 // 创建对象
 Player* player;
@@ -31,46 +31,6 @@ std::vector<Bullet*> bullets;
 std::vector<Object*> objects;
 std::vector<AIPlayer*> enemies;
 std::vector<sf::VertexArray> Global::lines;
-
-point getWindowToWorldPosition(const sf::View& view) {
-	// 获取鼠标在窗口中的位置（窗口坐标系）
-	sf::Vector2i windowMousePosition = sf::Mouse::getPosition(window);
-
-	// 将窗口坐标转换为视图坐标系
-	point viewMousePosition = window.mapPixelToCoords(windowMousePosition, view);
-
-	return viewMousePosition;
-}
-
-void drawGrid(int cellSize) {
-	constexpr int borderSize = 20;
-	//边界
-	sf::RectangleShape border(point(mapWidth + borderSize * 2, mapHeight + borderSize * 2));
-	border.setFillColor(sf::Color(150, 150, 150));
-	border.setPosition(-borderSize, -borderSize);
-	window.draw(border);
-
-	//地图
-	sf::RectangleShape map(point(mapWidth, mapHeight));
-	map.setFillColor(sf::Color(198, 198, 198));
-	window.draw(map);
-
-	//网格
-	sf::RectangleShape line(point(mapWidth, 1));
-	line.setFillColor(sf::Color(170, 170, 170));
-
-	for (size_t y = 0; y <= mapHeight / cellSize; ++y) {
-		line.setPosition(0, static_cast<float>(y * cellSize));
-		window.draw(line);
-	}
-
-	line.setSize(point(1, mapHeight));
-
-	for (size_t x = 0; x <= mapWidth / cellSize; ++x) {
-		line.setPosition(static_cast<float>(x * cellSize), 0);
-		window.draw(line);
-	}
-}
 
 void update() {
 	networkManager.update();
@@ -83,43 +43,18 @@ void update() {
 	while (window.pollEvent(event)) {
 		menu.updateMenu(event);
 
-		if (event.type == sf::Event::Closed) {
+		if (event.type == sf::Event::Closed)
 			window.close();
-		}
-		else if (event.type == sf::Event::Resized) {
-			// 获取新的窗口尺寸
-			float windowWidth = static_cast<float>(event.size.width);
-			float windowHeight = static_cast<float>(event.size.height);
-
-			// 计算新的视图尺寸，选择更窄的边作为基础
-			float viewWidth, viewHeight;
-			if (windowWidth / mapWidth < windowHeight / mapHeight) {
-				viewWidth = windowWidth;
-				viewHeight = windowWidth * mapHeight / mapWidth;
-			}
-			else {
-				viewWidth = windowHeight * mapWidth / mapHeight;
-				viewHeight = windowHeight;
-			}
-
-			// 更新视图尺寸
-			view.setSize(viewWidth, viewHeight);
-
-			// 计算并设置新的视口，使内容居中
-			sf::FloatRect viewport(
-				(windowWidth - viewWidth) / 2 / windowWidth,
-				(windowHeight - viewHeight) / 2 / windowHeight,
-				viewWidth / windowWidth,
-				viewHeight / windowHeight
-			);
-			view.setViewport(viewport);
-		}
+		else if (event.type == sf::Event::Resized)
+			UI::resize(event);
 
 		if (!menu.inMenu()) {
 			if (event.type == sf::Event::LostFocus)
 				hasFocus = false;
 			else if (event.type == sf::Event::GainedFocus)
 				hasFocus = true;
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::F2))
+				Global::debugMode ^= 1;
 			// 处理UI点击
 			if (event.type == sf::Event::MouseButtonPressed
 				&& event.mouseButton.button == sf::Mouse::Left
@@ -138,20 +73,20 @@ void update() {
 		// 如果游戏未结束并且用户聚焦于当前应用
 		if (hasFocus && !isClickButton && !Global::isGameOver) {
 			// 更新炮塔方向
-			point mousePosition = getWindowToWorldPosition(view);
+			point mousePosition = window.mapPixelToCoords(sf::Mouse::getPosition(window), viewer);
 			player->calcTurretRotation(mousePosition);
-
 			// 根据用户输入(wsad)移动炮台
 			player->checkMove(moveSpeed);
-
 			// 如果按下鼠标左键,则进行开火
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
 				if (player->fire(mousePosition))
 					networkManager.sendPlayerFireEvent(mousePosition);
 		}
 
-		for (const auto& obj : objects)
+		for (int i = 0; i < objects.size(); i++) {
+			auto obj = objects[i];
 			obj->update();
+		}
 
 		// 网格遍历碰撞检测
 		std::map<std::pair<int, int>, std::vector<Object*>> grid;
@@ -166,10 +101,12 @@ void update() {
 			for (size_t i = 0; i < objs.size(); ++i) {
 				for (size_t j = i + 1; j < objs.size(); ++j) {
 					auto obj1 = objs[i], obj2 = objs[j];
-					sf::VertexArray line(sf::Lines, 2);
-					line[0].position = obj1->getPosition();
-					line[1].position = obj2->getPosition();
-					Global::lines.push_back(line);
+					if (Global::debugMode) {
+						sf::VertexArray line(sf::Lines, 2);
+						line[0].position = obj1->getPosition();
+						line[1].position = obj2->getPosition();
+						Global::lines.push_back(line);
+					}
 					
 					if (obj1->isCollideWith(obj2) && obj1 != obj2
 						&& obj1->getHealth() && obj2->getHealth()) {
@@ -184,14 +121,16 @@ void update() {
 								obj1->reduceHealth(obj2->getBodyDamage());
 								obj2->reduceHealth(obj1->getBodyDamage());
 								if (!obj1->getHealth() || !obj2->getHealth()) {
-									auto winner = static_cast<Player*>(obj1->getHealth() ? obj1 : obj2);
-									winner->AddExp(obj2->getExp());
+									auto winner = obj1->getHealth() ? obj1 : obj2;
+									auto failer = obj1->getHealth() ? obj2 : obj1;
+									winner->AddExp(failer->getExp());
+									auto vel = math::combined(winner->getVelocity(), winner->getMass(), failer->getVelocity(), failer->getMass());
+									winner->setVelocity(vel);
+									Global::checkPlayerDie(winner, static_cast<Player*>(failer));
 									continue;
 								}
 							}
-							auto vel = math::momentum(obj1->getVelocity(), obj1->getMass(), obj2->getVelocity(), obj2->getMass());
-							obj2->setVelocity(-vel.first);
-							obj1->setVelocity(-vel.second);
+							obj1->collision(obj2);
 						}
 						else { // 弹物相撞
 							auto bullet = obj1->WhatAmI() == ObjectType::Bullet ? obj1 : obj2;
@@ -199,18 +138,18 @@ void update() {
 							if (obj1->getTeam() != obj2->getTeam()) {
 								int health = obj->getHealth();
 								obj->reduceHealth(bullet->getMaxHealth());
-								bullet->reduceHealth(obj->getHealth() ? bullet->getHealth() : health);
+								bullet->reduceHealth(health);
 								if (obj->getHealth() <= 0) {
 									if (auto pOwner = static_cast<Bullet*>(bullet)->getOwner())
 										pOwner->AddExp(obj->getExp());
 									auto vel = math::combined(obj1->getVelocity(), obj1->getMass(), obj2->getVelocity(), obj2->getMass());
 									bullet->setVelocity(vel);
+									if (obj->WhatAmI() == ObjectType::Player)
+										Global::checkPlayerDie(bullet, static_cast<Player*>(obj));
 									continue;
 								}
 							}
-							auto vel = math::collision(bullet->getVelocity(), obj->getVelocity(), bullet->getPosition(), obj->getPosition(), bullet->getMass() / 2, obj->getMass());
-							bullet->setVelocity(vel.first);
-							obj->setVelocity(vel.second);
+							obj1->collision(obj2);
 						}
 					}
 				}
@@ -249,14 +188,21 @@ void render() {
 	window.clear(sf::Color(100, 100, 100));
 
 	if (menu.inMenu()) {
-		drawGrid(15);
+		Global::ui.drawGrid();
 		menu.draw();
 	}
 	else {
 		// 更新视图使其聚焦于圆
-		view.setCenter(player->getPosition());
-		window.setView(view);
-		drawGrid(15);
+		if (!Global::isGameOver) {
+			viewer.setCenter(player->getPosition());
+		}
+		else {
+			if (Global::whoKilledMe)
+				viewer.setCenter(Global::whoKilledMe->getPosition());
+			Global::ui.drawGameOver();
+		}
+		window.setView(viewer);
+		Global::ui.drawGrid();
 
 		for (const auto& obj : objects)
 			window.draw(*obj);
@@ -269,9 +215,6 @@ void render() {
 		window.setView(window.getDefaultView());
 		Global::ui.draw();
 		Global::ui.drawMinimap();
-		if (Global::isGameOver) {
-			Global::ui.drawGameOver();
-		}
 	}
 	window.display();
 }

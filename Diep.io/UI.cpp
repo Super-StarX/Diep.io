@@ -1,4 +1,4 @@
-
+﻿
 #include <iostream>
 #include "UI.h"
 #include "AIPlayer.h"
@@ -42,30 +42,49 @@ point UI::getPositionOnMinimap(point position) {
 					  position.y / mapHeight * minimap.getSize().y };
 }
 
-void UI::drawMinimap() {
-	window.draw(minimap); // �������½�λ��
-    sf::CircleShape playerShape(3, 30);
-    playerShape.setFillColor(sf::Color::Green);
-    playerShape.setPosition(getPositionOnMinimap(player->getPosition()));
-    window.draw(playerShape);
+void UI::drawGrid() {
+	constexpr int borderSize = 20;
+	//边界
+	sf::RectangleShape border(point(mapWidth + borderSize * 2, mapHeight + borderSize * 2));
+	border.setFillColor(sf::Color(150, 150, 150));
+	border.setPosition(-borderSize, -borderSize);
+	window.draw(border);
 
-    for (auto& enemy : enemies) {
-        sf::CircleShape enemyShape(2, 30);
-        enemyShape.setFillColor(sf::Color::Red);
-        enemyShape.setPosition(getPositionOnMinimap(enemy->getPosition()));
-        window.draw(enemyShape);
-    }
+	//地图
+	sf::RectangleShape map(point(mapWidth, mapHeight));
+	map.setFillColor(sf::Color(198, 198, 198));
+	window.draw(map);
+
+	//网格
+	sf::RectangleShape line(point(mapWidth, 1));
+	line.setFillColor(sf::Color(170, 170, 170));
+
+	for (size_t y = 0; y <= mapHeight / cellSize; ++y) {
+		line.setPosition(0, static_cast<float>(y * cellSize));
+		window.draw(line);
+	}
+
+	line.setSize(point(1, mapHeight));
+
+	for (size_t x = 0; x <= mapWidth / cellSize; ++x) {
+		line.setPosition(static_cast<float>(x * cellSize), 0);
+		window.draw(line);
+	}
+}
+
+void UI::drawMinimap() {
+	window.draw(minimap); // 设置右下角位置
 
 	for (auto& otherPlayer : players) {
 		sf::CircleShape enemyShape(2, 30);
-		enemyShape.setFillColor(sf::Color::Blue);
+		enemyShape.setFillColor(otherPlayer->getColor());
 		enemyShape.setPosition(getPositionOnMinimap(otherPlayer->getPosition()));
 		window.draw(enemyShape);
 	}
 }
 
 void UI::drawGameOver() {
-	// �ڻ�������ʾ��Ϸ����������ͣ��Ϸ
+	// 在画面上显示游戏结束，并暂停游戏
 	gameOverText.setFont(Global::font);
 	gameOverText.setString("Game Over");
 	gameOverText.setPosition(350, 250);
@@ -79,7 +98,7 @@ void UI::draw() {
 		for (auto& button : buttons)
 			button.draw();
 
-	// ����������Ϣ
+	// 更新坐标信息
 	std::ostringstream ss;
 	ss << "x: " << player->getPosition().x << ", y: " << player->getPosition().y <<
 		"\nfps:" << 1 / Global::deltaTime <<
@@ -90,4 +109,33 @@ void UI::draw() {
 	playerPosText.setString(ss.str());
 	window.draw(playerPosText);
 
+}
+
+void UI::resize(sf::Event& event){
+	// 获取新的窗口尺寸
+	float windowWidth = static_cast<float>(event.size.width);
+	float windowHeight = static_cast<float>(event.size.height);
+
+	// 计算新的视图尺寸，选择更窄的边作为基础
+	float viewWidth, viewHeight;
+	if (windowWidth / mapWidth < windowHeight / mapHeight) {
+		viewWidth = windowWidth;
+		viewHeight = windowWidth * mapHeight / mapWidth;
+	}
+	else {
+		viewWidth = windowHeight * mapWidth / mapHeight;
+		viewHeight = windowHeight;
+	}
+
+	// 更新视图尺寸
+	viewer.setSize(viewWidth, viewHeight);
+
+	// 计算并设置新的视口，使内容居中
+	sf::FloatRect viewport(
+		(windowWidth - viewWidth) / 2 / windowWidth,
+		(windowHeight - viewHeight) / 2 / windowHeight,
+		viewWidth / windowWidth,
+		viewHeight / windowHeight
+	);
+	viewer.setViewport(viewport);
 }

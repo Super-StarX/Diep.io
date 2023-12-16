@@ -21,10 +21,10 @@ Object::Object(float radius, const sf::Color& color, const point& position, int 
 	: body(radius), maxHealth(maxHealth), currentHealth(maxHealth) {
 	helper::add(objects, this);
 	// 将炮塔原点设置为其局部边界的中心
-	body.setOrigin(radius, radius);
+	setOrigin(body);
 	body.setPosition(position);
 	body.setFillColor(color);
-	body.setOutlineThickness(radius / 5);
+	body.setOutlineThickness(3);
 	auto lineColor = color;
 	lineColor.r = static_cast<int>(lineColor.r * 0.75);
 	lineColor.g = static_cast<int>(lineColor.g * 0.75);
@@ -32,7 +32,7 @@ Object::Object(float radius, const sf::Color& color, const point& position, int 
 	body.setOutlineColor(lineColor);
 
 	healthText.setFont(Global::font);
-	healthText.setCharacterSize(static_cast<int>(radius) * 2);
+	healthText.setCharacterSize(static_cast<int>(radius) );
 	healthText.setFillColor(sf::Color::White);
 	setOrigin(healthText);
 	healthText.setPosition(body.getPosition());
@@ -160,6 +160,35 @@ bool Object::isCollideWith(const Object* other, float extraDistance) const {
 	return distance < getRadius() + other->getRadius() + extraDistance;
 }
 
+void Object::collision(Object* other) {
+	point normal = getPosition() - other->getPosition();
+	point unit_normal = normal * (1.0f / sqrtf(normal.dot(normal)));
+	point unit_tangent{ -unit_normal.y, unit_normal.x };
+
+	point v1 = getVelocity();
+	point v2 = other->getVelocity();
+	float v1n = unit_normal.dot(v1);
+	float v1t = unit_tangent.dot(v1);
+	float v2n = unit_normal.dot(v2);
+	float v2t = unit_tangent.dot(v2);
+
+	// Velocity components in normal direction after collision, tangent components remain same
+	float m1 = getMass();
+	float m2 = other->getMass();
+	float v1n_final = (v1n * (m1 - m2) + 2 * m2 * v2n) / (m1 + m2);
+	float v2n_final = (v2n * (m2 - m1) + 2 * m1 * v1n) / (m1 + m2);
+
+	// Convert scalar normal and tangential speeds into vectors
+	point v1n_final_vec = unit_normal * v1n_final;
+	point v1t_final_vec = unit_tangent * v1t;
+	point v2n_final_vec = unit_normal * v2n_final;
+	point v2t_final_vec = unit_tangent * v2t;
+
+	// Update velocities with final velocities after collision
+	setVelocity(v1n_final_vec + v1t_final_vec);
+	other->setVelocity(v2n_final_vec + v2t_final_vec);
+}
+
 void Object::randomAddToMap() {
 	bool isValid; // 是有效的
 	do {
@@ -248,10 +277,7 @@ void Object::move(float x, float y) {
 	if (curPos.y + y < 0 ||
 		curPos.y + y + playerBounds.height > mapHeight)
 		y = 0;
-
-	polygonBody.move(x, y);
-	body.move(x, y);
-	healthText.move(x, y);
+	setPosition(curPos.x + x, curPos.y + y);
 }
 
 void Object::draw(sf::RenderTarget& target, sf::RenderStates states) const {

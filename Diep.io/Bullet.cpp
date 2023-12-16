@@ -8,7 +8,12 @@ Bullet::Bullet(Player* owner, point pos)
 	bulletSpeedMulti(owner->getBulletSpeedMulti()),
 	bulletPenetration(owner->getBulletPenetration()),
 	Object(owner->getBulletRadius(), owner->getColor(), pos, owner->getBulletDamage()) {
+	helper::add(bullets, this);
 	setTeam(owner->getTeam());
+}
+
+Bullet::~Bullet() {
+	helper::erase(bullets, this);
 }
 
 bool Bullet::sameOwner(const Bullet* target) const {
@@ -20,7 +25,7 @@ bool Bullet::isMyOwner(const Object* target) const {
 }
 
 bool Bullet::isAI() const {
-	return owner->isAI();
+	return owner->WhatAmI() == ObjectType::AIPlayer;
 }
 
 bool Bullet::isVivid() const {
