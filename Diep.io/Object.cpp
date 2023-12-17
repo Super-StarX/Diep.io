@@ -40,17 +40,14 @@ Object::Object(float radius, const sf::Color& color, const point& position, int 
 	ID = curObjectId++;
 }
 
+//资源
 Object::Object(ResourceType type, const point& position) {
 	helper::add(objects, this);
 	isPolygon = true;
 	switch (type)
 	{
 	case ResourceType::Square:
-		polygonBody.setPointCount(4);	
-		polygonBody.setPoint(0, point(10, 10));
-		polygonBody.setPoint(1, point(-10, 10));
-		polygonBody.setPoint(2, point(-10, -10));
-		polygonBody.setPoint(3, point(10, -10));
+		initConvexShape2(polygonBody, { point(10, 10),point(-10, 10),point(-10, -10),point(10, -10) });
 		polygonBody.setFillColor(sf::Color(255, 232, 105));
 		polygonBody.setOutlineColor(sf::Color(191, 174, 78));
 		polygonRadius = 12;
@@ -58,10 +55,7 @@ Object::Object(ResourceType type, const point& position) {
 		exp = 10;
 		break;
 	case ResourceType::Triangle:
-		polygonBody.setPointCount(3);
-		polygonBody.setPoint(0, point(15,9));
-		polygonBody.setPoint(1, point(-15, 9));
-		polygonBody.setPoint(2, point(0, -18));
+		initConvexShape2(polygonBody, { point(15,9),point(-15, 9),point(0, -18) });
 		polygonBody.setFillColor(sf::Color(252, 118, 119));
 		polygonBody.setOutlineColor(sf::Color(183, 86, 87));
 		polygonRadius = 13;
@@ -69,28 +63,18 @@ Object::Object(ResourceType type, const point& position) {
 		exp = 25;
 		break;
 	case ResourceType::Pentagon:
-		polygonBody.setPointCount(5);
-		polygonBody.setPoint(0, point(20, 8)); 
-		polygonBody.setPoint(1, point(0, 20));
-		polygonBody.setPoint(2, point(-20, 8)); 
-		polygonBody.setPoint(3, point(-12, -16));
-		polygonBody.setPoint(4, point(12, -16));
+		initConvexShape2(polygonBody, { point(20, 8),point(0, 20),point(-20, 8),point(-12, -16),point(12, -16) });
 		polygonBody.setFillColor(sf::Color(118, 148, 252));
 		polygonBody.setOutlineColor(sf::Color(85, 101, 109));
-		polygonRadius = 16;
+		polygonRadius = 17;
 		maxHealth = 100;
 		exp = 130;
 		break;
 	case ResourceType::AlphaPentagon:
-		polygonBody.setPointCount(5);
-		polygonBody.setPoint(0, point(100, 40));
-		polygonBody.setPoint(1, point(0, 100)); 
-		polygonBody.setPoint(2, point(-100, 40));
-		polygonBody.setPoint(3, point(-60, -80)); 
-		polygonBody.setPoint(4, point(60, -80));
+		initConvexShape2(polygonBody, { point(100, 40),point(0, 100),point(-100, 40),point(-60, -80),point(60, -80) });
 		polygonBody.setFillColor(sf::Color(118, 148, 252));
 		polygonBody.setOutlineColor(sf::Color(85, 101, 109));
-		polygonRadius = 80;
+		polygonRadius = 85;
 		maxHealth = 3000;
 		exp = 3000;
 		break;
@@ -115,14 +99,13 @@ Object::Object(ResourceType type, const point& position) {
 	++Global::resourceCount;
 }
 
-Object::Object(const sf::Color& color, const point& position, int maxHealth) :maxHealth(maxHealth), currentHealth(maxHealth) {
+//子机
+Object::Object(const sf::Color& color, const point& position, int maxHealth, float maxSpeed)
+	:maxHealth(maxHealth), currentHealth(maxHealth), MaxSpeed(maxSpeed){
 	helper::add(objects, this);
 	isPolygon = true;
 	polygonRadius = 10.5f;
-	polygonBody.setPointCount(3);
-	polygonBody.setPoint(0, point(10, -6));
-	polygonBody.setPoint(1, point(-10, -6));
-	polygonBody.setPoint(2, point(0, 12));
+	initConvexShape2(polygonBody, { point(10, -6),point(-10, -6),point(0, 12) });
 	polygonBody.setFillColor(color);
 	polygonBody.setOutlineColor(sf::Color(85, 101, 109));
 	polygonBody.setPosition(position);
@@ -198,8 +181,9 @@ void Object::randomAddToMap() {
 		setPosition(randomX, randomY);
 		for (auto other : objects) {
 			if (other != this) {
-				float minDistance = other->WhatAmI() == ObjectType::Object ? 0
-					: (other->getRadius() + getRadius()) * 2.f;
+				float minDistance = other->getRadius() + getRadius();
+				if (other->WhatAmI() != ObjectType::Object)
+					minDistance *= 2;
 				if (isCollideWith(other, minDistance)) {
 					isValid = false;
 					break;
@@ -214,6 +198,27 @@ void Object::reduceHealth(int amount) {
 	std::ostringstream ss;
 	ss << currentHealth << "/" << maxHealth;
 	healthText.setString(ss.str());
+}
+
+void Object::updateDying() {
+	sf::Color color = body.getFillColor();
+	auto alpha = std::max(0, static_cast<int>(color.a - 1024 * Global::deltaTime));
+	color.a = alpha;
+	body.setFillColor(color);
+	color = body.getOutlineColor();
+	color.a = alpha;
+	body.setOutlineColor(color);
+	color = polygonBody.getFillColor();
+	color.a = alpha;
+	polygonBody.setFillColor(color);
+	color = polygonBody.getOutlineColor();
+	color.a = alpha;
+	polygonBody.setOutlineColor(color);
+	color = healthText.getFillColor();
+	color.a = alpha;
+	healthText.setFillColor(color);
+	if (alpha <= 0)
+		isDied = true;
 }
 
 void Object::updateMove() {
@@ -243,27 +248,10 @@ void Object::updateMove() {
 	// 移动炮台
 	move(Velocity.x * delta, Velocity.y * delta);
 }
+
 void Object::update() {
-	if (!isDied &&!currentHealth) {
-		sf::Color color = body.getFillColor();
-		auto alpha = std::max(0, static_cast<int>(color.a - 1024 * Global::deltaTime));
-		color.a = alpha;
-		body.setFillColor(color);
-		color = body.getOutlineColor();
-		color.a = alpha;
-		body.setOutlineColor(color);
-		color = polygonBody.getFillColor();
-		color.a = alpha;
-		polygonBody.setFillColor(color);
-		color = polygonBody.getOutlineColor();
-		color.a = alpha;
-		polygonBody.setOutlineColor(color);
-		color = healthText.getFillColor();
-		color.a = alpha;
-		healthText.setFillColor(color);
-		if (alpha <= 0)
-			isDied = true;
-	}
+	if (!isDied && !currentHealth)
+		updateDying();
 	updateMove();
 }
 

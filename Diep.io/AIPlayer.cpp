@@ -4,9 +4,10 @@
 #include "Data.h"
 #include "Network.h"
 
-AIPlayer::AIPlayer(float radius, const sf::Color& color, const point& position, int maxHealth) :
-    Player(radius, color, position, maxHealth) {
+AIPlayer::AIPlayer(float radius, const sf::Color& color, const point& position, int maxHealth, int level) :
+    Player(radius, color, position, maxHealth, level) {
     helper::add(enemies, this);
+    //level
 }
 
 AIPlayer::~AIPlayer() {
@@ -15,7 +16,6 @@ AIPlayer::~AIPlayer() {
 
 void AIPlayer::checkCollision() {
     Player::checkCollision();
-
     for (auto enemy : enemies) {
         if (enemy != this && isCollideWith(enemy)) {
             int health = getHealth();

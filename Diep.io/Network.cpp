@@ -1,4 +1,4 @@
-#include "Network.h"
+ï»¿#include "Network.h"
 #include "Object.h"
 #include "Bullet.h"
 #include "AIPlayer.h"
@@ -59,8 +59,8 @@ void NetworkManager::update() {
 	sf::Packet packet;
 
 	while (socket.receive(packet, sender, port) == sf::Socket::Done) {
-		// ´¦Àí½ÓÊÕµ½µÄÊý¾Ý
-		// ¼ÙÉè·þÎñÆ÷·¢ËÍÁËÒ»¸ö°üº¬ÆäËûÍæ¼ÒÎ»ÖÃµÄsf::Packet
+		// å¤„ç†æŽ¥æ”¶åˆ°çš„æ•°æ®
+		// å‡è®¾æœåŠ¡å™¨å‘é€äº†ä¸€ä¸ªåŒ…å«å…¶ä»–çŽ©å®¶ä½ç½®çš„sf::Packet
 		PacketType packetType;
 		packet >> packetType;
 		std::cout << "Message received: " << static_cast<char>(packetType) << ": ";
@@ -75,8 +75,8 @@ void NetworkManager::update() {
 			std::cout << "Player Joined: " << sender << ":" << port << std::endl;
 
 			connectedPeers.emplace_back(sender, port);
-			// ÓÐÈË¼ÓÈë, ¸øËû·ÖÅäid
-			auto newPlayer = new Player(15.f, sf::Color::Blue, point(450, 350), 1000);
+			// æœ‰äººåŠ å…¥, ç»™ä»–åˆ†é…id
+			auto newPlayer = new Player(15.f, sf::Color::Blue, point(450, 350), 1000, 1);
 			players.push_back(newPlayer);
 
 			sf::Packet replyPosition;
@@ -86,7 +86,7 @@ void NetworkManager::update() {
 
 			std::cout << "Send: Player Position" << std::endl;
 
-			// Í¬Ê±°ÑËùÓÐobjectµÄVelocity Acceleration currentHealth
+			// åŒæ—¶æŠŠæ‰€æœ‰objectçš„Velocity Acceleration currentHealth
 			initObject(player, PacketType::SyncPlayerStatus, sender, port);
 			for (auto resource : objects)
 				initObject(resource, PacketType::SyncResourceStatus, sender, port);
@@ -114,7 +114,7 @@ void NetworkManager::update() {
 			PlayerIDAssignData id;
 			packet >> id;
 
-			// ½ÓÊÕ·þÎñÆ÷·ÖÅäµÄid
+			// æŽ¥æ”¶æœåŠ¡å™¨åˆ†é…çš„id
 			player->setID(id.id);
 			player->setPosition(id.x, id.y);
 			player->setTurretRotation(id.turretRotation);
@@ -147,7 +147,7 @@ void NetworkManager::update() {
 			InitSyncData initData;
 			packet >> initData;
 
-			auto enemy = new Player(15.f, blueTeamColor, point(initData.x, initData.y), 1000);
+			auto enemy = new Player(15.f, blueTeamColor, point(initData.x, initData.y), 1000, 1);
 			enemy->setID(initData.id);
 			enemy->setVelocity(point(initData.vx, initData.vy));
 			enemy->setAcceleration(point(initData.ax, initData.ay));
@@ -162,7 +162,7 @@ void NetworkManager::update() {
 			InitSyncData initData;
 			packet >> initData;
 
-			auto enemy = new AIPlayer(15.f, redTeamColor, point(initData.x, initData.y), 100);
+			auto enemy = new AIPlayer(15.f, redTeamColor, point(initData.x, initData.y), 100, 1);
 			enemy->setID(initData.id);
 			enemy->setVelocity(point(initData.vx, initData.vy));
 			enemy->setAcceleration(point(initData.ax, initData.ay));
@@ -204,7 +204,7 @@ void NetworkManager::update() {
 			InitSyncData positionData;
 			packet >> positionData;
 
-			// Í¬²½¸ÃÍæ¼ÒµÄÎ»ÖÃ
+			// åŒæ­¥è¯¥çŽ©å®¶çš„ä½ç½®
 			auto it = find_if_id(players, positionData.id);
 			if (it != players.end()) {
 				(*it)->setPosition(positionData.x, positionData.y);
@@ -218,8 +218,8 @@ void NetworkManager::update() {
 			FireEventData fireEventData;
 			packet >> fireEventData;
 
-			// ÔÚ¸ÃÍæ¼Ò´¦²úÉúÅÚµ¯
-			// Í¬²½¸ÃÍæ¼ÒµÄÎ»ÖÃ
+			// åœ¨è¯¥çŽ©å®¶å¤„äº§ç”Ÿç‚®å¼¹
+			// åŒæ­¥è¯¥çŽ©å®¶çš„ä½ç½®
 			auto it = find_if_id(players, fireEventData.id);
 			if (it != players.end()) {
 				point target{ fireEventData.targetX, fireEventData.targetY };
@@ -233,7 +233,7 @@ void NetworkManager::update() {
 			InitSyncData positionData;
 			packet >> positionData;
 
-			// Í¬²½¸ÃÍæ¼ÒµÄÎ»ÖÃ
+			// åŒæ­¥è¯¥çŽ©å®¶çš„ä½ç½®
 			auto it = find_if_id(enemies, positionData.id);
 			if (it != enemies.end()) {
 				(*it)->setPosition(positionData.x, positionData.y);
@@ -314,12 +314,12 @@ void NetworkManager::sendPlayerResource(point pos) {
 	// std::cout << "Send: Player Resource Created" << std::endl;
 }
 
-// ³¢ÊÔÁ¬½Óµ½Ä³Ò»ip
+// å°è¯•è¿žæŽ¥åˆ°æŸä¸€ip
 bool NetworkManager::tryConnect(std::string typedText) {
 	std::string ip;
 	std::string port;
 
-	// ½âÎö IP µØÖ·ºÍ¶Ë¿ÚºÅ
+	// è§£æž IP åœ°å€å’Œç«¯å£å·
 	std::stringstream ss(typedText);
 	std::getline(ss, ip, ':');
 	std::getline(ss, port, ':');
@@ -333,7 +333,7 @@ bool NetworkManager::tryConnect(std::string typedText) {
 	return addConnection(ipAddress, parsedPort);
 }
 
-// ¿Í»ú¼ÓÈëÖ÷»ú, ÏòÖ÷»ú·¢ËÍÒ»¸öÎÒÒªÀ´µÄÖ¸Áî, µÈ´ý½ÓÊÕÖ÷»úµÄ³õÊ¼»¯ÐÅºÅ
+// å®¢æœºåŠ å…¥ä¸»æœº, å‘ä¸»æœºå‘é€ä¸€ä¸ªæˆ‘è¦æ¥çš„æŒ‡ä»¤, ç­‰å¾…æŽ¥æ”¶ä¸»æœºçš„åˆå§‹åŒ–ä¿¡å·
 bool NetworkManager::addConnection(const sf::IpAddress& ipAddress, unsigned short port) {
 	for (auto& [addr, p] : connectedPeers) {
 		if (addr == ipAddress && p == port)
@@ -344,7 +344,7 @@ bool NetworkManager::addConnection(const sf::IpAddress& ipAddress, unsigned shor
 	packet << PacketType::PlayerJoined;
 	sf::Socket::Status status = socket.send(packet, ipAddress, port);
 
-	// ¼ì²é·¢ËÍ×´Ì¬
+	// æ£€æŸ¥å‘é€çŠ¶æ€
 	bool success = status == sf::Socket::Done;
 	if (success)
 		std::cout << "Connection successful with " << ipAddress << ":" << port << std::endl;

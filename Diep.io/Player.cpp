@@ -4,25 +4,25 @@
 #include "Data.h"
 #include "Network.h"
 
-Player::Player(float radius, const sf::Color& color, const point& position, int maxHealth) :
+Player::Player(float radius, const sf::Color& color, const point& position, int maxHealth, int level) :
 	Object(radius, color, position, maxHealth), color(color) {
-	changeTurret(TurretTypes::Default);
+	changeTurret(TurretTypes::Overseer);
 	setTeam(color == blueTeamColor ? 1 : 2);
 	helper::add(players, this);
-	healthBorder.setSize(point(radius * 2 + 2, 5));
+	healthBorder.setSize(point(radius * 2.2f + 2, 5));
 	healthBorder.setFillColor(sf::Color{80,80,80});
 	healthBorder.setPosition(getPosition());
-	healthBar.setSize(point(radius * 2, 3));
+	healthBar.setSize(point(radius * 2.2f, 3));
 	healthBar.setFillColor(sf::Color::Red);
 	healthBar.setPosition(getPosition());
 	levelText.setFont(Global::font);
 	levelText.setFillColor(sf::Color::White);
 	levelText.setPosition(getPosition());
-	setLevel(1);
+	setLevel(level);
 }
 
 Player::Player(Player* owner) :
-	Object(owner->getColor(), owner->getPosition(), owner->getBulletDamage())
+	Object(owner->getColor(), owner->getPosition(), owner->getBulletDamage(), owner->getBulletSpeed())
 	, owner(owner)
 	, color(owner->getColor()) {
 	helper::add(players, this);
@@ -32,11 +32,17 @@ Player::Player(Player* owner) :
 Player::~Player() {
 	helper::erase(players, this);
 	turrets.clear();
+	for (auto spawn : spawns) {
+		spawn->owner = nullptr;
+		spawn->reduceHealth(spawn->getHealth());
+	}
 	if (owner)
 		helper::erase(owner->spawns, this);
 }
 
 void Player::AddExp(int amount) {
+	if (owner)
+		return owner->AddExp(amount);
 	if (level > 45 || level < 1)
 		return;
 	int need = nextLevelExp[level];
@@ -65,13 +71,13 @@ void Player::setLevel(int amount) {
 	changeTurret(Type);
 	setOrigin(body);
 	setOrigin(polygonBody);
-	setOrigin(healthBorder, point(0, radius * 1.3f));
-	setOrigin(healthBar, point(0, radius * 1.3f));
-	setOrigin(healthText, point(0, radius * 1.85f));
+	setOrigin(healthBorder, point(0, radius * 1.4f));
+	setOrigin(healthBar, point(0, radius * 1.4f));
+	setOrigin(healthText, point(0, radius * 2.f));
 	healthBar.setPosition(healthBar.getPosition().x - ((healthBorder.getSize().x - 2) - healthBar.getSize().x) / 2, healthBar.getPosition().y);
 	levelText.setCharacterSize(static_cast<int>(radius));
 	levelText.setString("Level:" + std::to_string(amount));
-	setOrigin(levelText, point(0, -radius * 1.85f));
+	setOrigin(levelText, point(0, -radius * 1.75f));
 }
 
 bool Player::upgradeCount() const {
@@ -286,7 +292,7 @@ bool Player::fire(point target) {
 	return false;
 }
 
-void Player::checkFirendlyCollide(point vel) {
+void Player::checkFirendlyCollide(point& vel) {
 	// 碰撞检测和处理
 	if (owner && vel.x && vel.y) {
 		Player* pClosest = nullptr;
@@ -313,34 +319,56 @@ void Player::checkFirendlyCollide(point vel) {
 	}
 }
 
-void Player::update() {
-	Object::update();
-	float delta= Global::deltaTime;
-	if (!getHealth()) {
-		for (auto& turret : turrets) {
-			auto& body = turret.getShape();
-			sf::Color color = body.getFillColor();
-			auto alpha = std::max(0, static_cast<int>(color.a - 1024 * Global::deltaTime));
-			color.a = alpha;
-			body.setFillColor(color);
-			color = body.getOutlineColor();
-			color.a = alpha;
-			body.setOutlineColor(color);
-		}
+void Player::updateDying() {
+	Object::updateDying();
+	for (auto& turret : turrets) {
+		auto& body = turret.getShape();
+		sf::Color color = body.getFillColor();
+		auto alpha = std::max(0, static_cast<int>(color.a - 1024 * Global::deltaTime));
+		color.a = alpha;
+		body.setFillColor(color);
+		color = body.getOutlineColor();
+		color.a = alpha;
+		body.setOutlineColor(color);
 	}
+}
+
+void Player::updateSpawns() {
+	// 产生新子机
+	if (spawns.size() < 8 && fireFrame > rof) {
+		auto spawn = new Player(this);
+		spawns.push_back(spawn);
+		fireFrame = 0.f;
+	}
+	// 
+}
+
+void Player::update() {
 	if (owner) {
 		auto& vel = getAcceleration();
-		float rad = atan2(vel.y, vel.x);
-		setRotation(math::angle(rad) + 30);
-		setAcceleration(point(0, 0));
-	}
-	if (Type == TurretTypes::Overseer) {
-		if (spawns.size() < 8 && fireFrame > rof) {
-			auto spawn = new Player(this);
-			spawns.push_back(spawn);
-			fireFrame = 0.f;
+		if (!vel.x && !vel.y) { // 回到母舰身边
+			point direction = owner->getPosition() - getPosition();
+			if (direction.length() > owner->getRadius()) {
+				point acc = direction.normalization() * getMaxAcceleration();
+				setAcceleration(acc);
+			}
 		}
 	}
+	Object::update();
+	float delta= Global::deltaTime;
+
+	if (owner) {
+		auto& vel = getAcceleration();
+		if (vel.x || vel.y) {
+			float rad = atan2(vel.y, vel.x);
+			setRotation(math::angle(rad) + 30);
+		}
+		setAcceleration(point(0, 0));
+	}
+
+	if (Type == TurretTypes::Overseer)
+		updateSpawns();
+
 	//rof更新
 	fireFrame += delta;
 	if (this == player)
@@ -348,8 +376,10 @@ void Player::update() {
 }
 
 void Player::upgradeBulletSpeed(float amount) {
-	bulletSpeedMulti += amount;
+	bulletSpeed += amount;
 	remainUpgradeSkills--;
+	for (auto spawn : spawns)
+		spawn->setMaxSpeed(bulletSpeed);
 }
 
 void Player::upgradeBulletPenetration(float amount) {
@@ -360,6 +390,11 @@ void Player::upgradeBulletPenetration(float amount) {
 void Player::upgradeBulletDamage(int amount) {
 	bulletDamage += amount;
 	remainUpgradeSkills--;
+	for (auto spawn : spawns) {
+		float percent = static_cast<float>(spawn->getHealth()) / getMaxHealth();
+		spawn->setMaxHealth(bulletDamage);
+		spawn->setHealth(bulletDamage * percent);
+	}
 }
 
 void Player::upgradeReloadInterval(float amount) {

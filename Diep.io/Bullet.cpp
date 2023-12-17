@@ -5,7 +5,7 @@
 
 Bullet::Bullet(Player* owner, point pos)
 	: owner(owner),
-	bulletSpeedMulti(owner->getBulletSpeedMulti()),
+	bulletSpeed(owner->getBulletSpeed()),
 	bulletPenetration(owner->getBulletPenetration()),
 	Object(owner->getBulletRadius(), owner->getColor(), pos, owner->getBulletDamage()) {
 	helper::add(bullets, this);
@@ -53,7 +53,7 @@ point Bullet::evaluatePosition() {
 	float delta = Global::deltaTime;
 	vel += getAcceleration() * delta;
 
-	return getPosition() + vel * delta * bulletSpeedMulti;
+	return getPosition() + (vel + point(bulletSpeed, bulletSpeed)) * delta;
 }
 
 void Bullet::updateMove() {
@@ -62,9 +62,10 @@ void Bullet::updateMove() {
 	// 速度更新
 	point vel = getVelocity();
 	vel += getAcceleration() * delta;
+	vel += point(bulletSpeed, bulletSpeed);
 
 	// 移动子弹
-	move(vel.x * delta * bulletSpeedMulti, vel.y * delta * bulletSpeedMulti);
+	move(vel.x * delta, vel.y * delta);
 
 	float currentSpeed = vel.length();
 
@@ -84,10 +85,8 @@ void Bullet::move(float x, float y) {
 	point curPos = getPosition();
 	sf::FloatRect bounds = getGlobalBounds();
 
-	if (curPos.x + x <= 0 ||
-		curPos.x + x + bounds.width >= mapWidth ||
-		curPos.y + y <= 0 ||
-		curPos.y + y + bounds.height >= mapHeight)
+	point next = curPos + point(x, y);
+	if (!next.inMap())
 		reduceHealth(10);
 
 	Object::move(x, y);

@@ -28,6 +28,6 @@ private:
 	Player* owner{ nullptr };
 	int life{ 0 };
 	float bulletDefaultSpeed{ 150.0f };
-	float bulletSpeedMulti{ 1.0f };
+	float bulletSpeed{ 1.0f };
 	float bulletPenetration{ 0.0f };
 };

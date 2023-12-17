@@ -4,7 +4,7 @@
 
 class AIPlayer : public Player {
 public:
-	AIPlayer(float radius, const sf::Color& color, const point& position, int maxHealth);
+	AIPlayer(float radius, const sf::Color& color, const point& position, int maxHealth, int level);
 	~AIPlayer();
 	void checkCollision();
 	float fastDistance(const point& a, const point& b);

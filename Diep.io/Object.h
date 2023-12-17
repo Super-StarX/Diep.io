@@ -18,7 +18,7 @@ public:
 	//创建资源
 	Object(ResourceType type, const point& position);
 	//创建子机
-	Object(const sf::Color& color, const point& position, int maxHealth);
+	Object(const sf::Color& color, const point& position, int maxHealth, float maxSpeed);
 	~Object();
 
 	const int getID() const { return ID; }
@@ -30,7 +30,6 @@ public:
 	const point& getAcceleration() const { return Acceleration; }
 	float getMaxAcceleration() const { return MaxAcceleration; }
 	float getRadius() const { return isPolygon ? polygonRadius : body.getRadius(); }
-	float getMass() const { return getRadius() * getRadius(); }
 	int getMaxHealth() const { return maxHealth; }
 	int getHealth() const { return currentHealth; }
 	int getExp() const { return exp; }
@@ -41,9 +40,11 @@ public:
 	void setID(int id) { ID = id; }
 	void setRadius(float radius) { body.setRadius(radius); }
 	void setMaxSpeed(float spd) { MaxSpeed = spd; }
+	void setMaxHealth(int num) { maxHealth = num; }
 	void setVelocity(const point& vel) { Velocity = vel; }
 	void setAcceleration(const point& vel) { Acceleration = vel; }
 	void setRotation(float degress);
+	void turn(float degress);
 	void setHealth(int health) { currentHealth = health; }
 	void setExp(int amount) { exp = amount; }
 	void setTeam(int idx) { team = idx; }
@@ -52,17 +53,19 @@ public:
 	void randomAddToMap();
 
 	virtual void updateMove();
+	virtual void updateDying();
 	virtual void update();
 	virtual void setPosition(float x, float y);
 	virtual void reduceHealth(int amount);
 	virtual ObjectType WhatAmI() const { return ObjectType::Object; }
 	virtual float getTurretRotation() const { return 0; }
+	virtual float getMass() const { return getRadius() * getRadius(); }
 	virtual void AddExp(int amount) { return; }
 	virtual point evaluatePosition() { return getPosition(); }
 
 	static ResourceType randomResourceType();
 protected:
-	virtual void checkFirendlyCollide(point vel) { return; }
+	virtual void checkFirendlyCollide(point& vel) { return; }
 	virtual void move(float x, float y);
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
